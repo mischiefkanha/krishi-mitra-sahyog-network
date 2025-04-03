@@ -10,6 +10,7 @@ import Register from "./pages/Register";
 import CropRecommendation from "./pages/CropRecommendation";
 import DiseaseDetection from "./pages/DiseaseDetection";
 import Marketplace from "./pages/Marketplace";
+import Dashboard from "./pages/Dashboard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -27,6 +28,7 @@ const App = () => (
           <Route path="/crop-recommendation" element={<CropRecommendation />} />
           <Route path="/disease-detection" element={<DiseaseDetection />} />
           <Route path="/marketplace" element={<Marketplace />} />
+          <Route path="/dashboard" element={<Dashboard />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

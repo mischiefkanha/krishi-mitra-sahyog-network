@@ -1,7 +1,7 @@
 
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Menu, X, User, ShoppingCart } from 'lucide-react';
+import { Menu, X, User, ShoppingCart, LayoutDashboard } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 const Navbar = () => {
@@ -22,6 +22,7 @@ const Navbar = () => {
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-8">
             <Link to="/" className="text-gray-700 hover:text-primary-700 font-medium">Home</Link>
+            <Link to="/dashboard" className="text-gray-700 hover:text-primary-700 font-medium">Dashboard</Link>
             <Link to="/crop-recommendation" className="text-gray-700 hover:text-primary-700 font-medium">Crop Recommendations</Link>
             <Link to="/disease-detection" className="text-gray-700 hover:text-primary-700 font-medium">Disease Detection</Link>
             <Link to="/marketplace" className="text-gray-700 hover:text-primary-700 font-medium">Marketplace</Link>
@@ -60,6 +61,13 @@ const Navbar = () => {
                 onClick={() => setIsMenuOpen(false)}
               >
                 Home
+              </Link>
+              <Link 
+                to="/dashboard" 
+                className="text-gray-700 hover:text-primary-700 font-medium py-2"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Dashboard
               </Link>
               <Link 
                 to="/crop-recommendation" 
