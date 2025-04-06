@@ -12,6 +12,7 @@ import DiseaseDetection from "./pages/DiseaseDetection";
 import Marketplace from "./pages/Marketplace";
 import Dashboard from "./pages/Dashboard";
 import NotFound from "./pages/NotFound";
+import TestBackend from "./pages/TestBackend";
 import { AuthProvider } from "./context/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -60,6 +61,7 @@ const App = () => (
                 </ProtectedRoute>
               } 
             />
+            <Route path="/test-backend" element={<TestBackend />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
