@@ -25,6 +25,9 @@ serve(async (req) => {
       throw new Error('No message provided');
     }
 
+    // Try to use a more efficient model with lower quota requirements
+    const model = 'gpt-3.5-turbo'; // Fallback to a model that typically has higher quotas
+
     // Call the OpenAI API with the farming assistant system prompt
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -33,7 +36,7 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: model,
         messages: [
           { 
             role: 'system', 
@@ -52,6 +55,20 @@ serve(async (req) => {
     const result = await response.json();
     
     if (result.error) {
+      console.error('OpenAI API error:', result.error);
+      
+      // Check if it's a quota error
+      if (result.error.message && result.error.message.includes('quota')) {
+        return new Response(
+          JSON.stringify({ 
+            response: "I'm sorry, but our AI service is currently unavailable due to high demand. Please try again later or contact support if this issue persists."
+          }),
+          {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          }
+        );
+      }
+      
       throw new Error(`OpenAI API error: ${result.error.message}`);
     }
     
@@ -69,6 +86,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         error: error.message || 'An error occurred while processing your message',
+        response: "I apologize, but I'm having trouble connecting to my knowledge base right now. Please try again in a few moments."
       }),
       {
         status: 500,

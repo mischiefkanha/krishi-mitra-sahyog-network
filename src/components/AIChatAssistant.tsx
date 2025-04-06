@@ -20,10 +20,12 @@ const AIChatAssistant = () => {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: 'assistant',
-      content: 'Hello! I\'m KrishiMitra, your farming assistant. How can I help you today?'
+      content: 'Hello! I\'m KrishiMitra, your farming assistant. How can I help you today?',
+      timestamp: new Date().toISOString()
     }
   ]);
   const [isLoading, setIsLoading] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const { user } = useAuth();
@@ -60,7 +62,15 @@ const AIChatAssistant = () => {
       
       if (error) throw error;
       
+      // Handle both response and error from the API
+      if (data.error) {
+        throw new Error(data.error);
+      }
+      
       const aiResponse = data.response;
+      
+      // Reset retry count on successful response
+      setRetryCount(0);
       
       // Add AI response
       setMessages(prev => [...prev, { 
@@ -86,10 +96,16 @@ const AIChatAssistant = () => {
     } catch (error: any) {
       console.error("Error in AI chat:", error);
       
+      // Increment retry count
+      const newRetryCount = retryCount + 1;
+      setRetryCount(newRetryCount);
+      
       // Add error message
       setMessages(prev => [...prev, { 
         role: 'assistant', 
-        content: 'Sorry, I encountered an error. Please try again later.',
+        content: newRetryCount > 2 
+          ? 'I\'m having persistent trouble connecting to my knowledge base. Please try again later or contact support.'
+          : 'Sorry, I encountered an error. Please try again later.',
         timestamp: new Date().toISOString()
       }]);
       
