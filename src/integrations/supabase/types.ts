@@ -9,7 +9,111 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      chat_history: {
+        Row: {
+          ai_response: string
+          id: string
+          timestamp: string
+          user_id: string
+          user_message: string
+        }
+        Insert: {
+          ai_response: string
+          id?: string
+          timestamp?: string
+          user_id: string
+          user_message: string
+        }
+        Update: {
+          ai_response?: string
+          id?: string
+          timestamp?: string
+          user_id?: string
+          user_message?: string
+        }
+        Relationships: []
+      }
+      crop_recommendations: {
+        Row: {
+          confidence: number | null
+          humidity: number
+          id: string
+          nitrogen: number
+          ph: number
+          phosphorus: number
+          potassium: number
+          rainfall: number
+          recommended_crop: string
+          soil_type: string
+          temperature: number
+          timestamp: string
+          user_id: string
+        }
+        Insert: {
+          confidence?: number | null
+          humidity: number
+          id?: string
+          nitrogen: number
+          ph: number
+          phosphorus: number
+          potassium: number
+          rainfall: number
+          recommended_crop: string
+          soil_type: string
+          temperature: number
+          timestamp?: string
+          user_id: string
+        }
+        Update: {
+          confidence?: number | null
+          humidity?: number
+          id?: string
+          nitrogen?: number
+          ph?: number
+          phosphorus?: number
+          potassium?: number
+          rainfall?: number
+          recommended_crop?: string
+          soil_type?: string
+          temperature?: number
+          timestamp?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      disease_detections: {
+        Row: {
+          confidence: number | null
+          description: string | null
+          disease_name: string
+          id: string
+          image_path: string
+          timestamp: string
+          treatment: string[] | null
+          user_id: string
+        }
+        Insert: {
+          confidence?: number | null
+          description?: string | null
+          disease_name: string
+          id?: string
+          image_path: string
+          timestamp?: string
+          treatment?: string[] | null
+          user_id: string
+        }
+        Update: {
+          confidence?: number | null
+          description?: string | null
+          disease_name?: string
+          id?: string
+          image_path?: string
+          timestamp?: string
+          treatment?: string[] | null
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

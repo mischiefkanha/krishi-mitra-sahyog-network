@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/components/ui/use-toast';
 import { Loader2, ThumbsUp } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 interface CropRecommendationResult {
   crop: string;
@@ -17,6 +18,36 @@ interface CropRecommendationResult {
   tips: string[];
 }
 
+const cropDescriptions = {
+  'rice': 'Rice is a staple food crop in India, requiring high rainfall and humidity.',
+  'wheat': 'Wheat is a rabi crop that grows well in moderately cool environments.',
+  'maize': 'Maize is an important cereal crop that thrives in well-drained soil and moderate temperatures.',
+  'cotton': 'Cotton is a cash crop that thrives in warm weather and well-drained soil.',
+  'sugarcane': 'Sugarcane is a tropical crop that requires hot and humid conditions.',
+  'jute': 'Jute is a rain-fed crop that grows well in hot and humid climate.',
+  'coffee': 'Coffee is a subtropical crop that prefers shade and humidity.',
+  'coconut': 'Coconut grows well in coastal regions with sandy soil and high humidity.',
+  'tea': 'Tea is grown in hilly regions with well-drained soil and cool temperatures.',
+};
+
+const getCropInfo = (crop: string) => {
+  const lcCrop = crop.toLowerCase();
+  
+  const description = cropDescriptions[lcCrop as keyof typeof cropDescriptions] || 
+    `${crop} is a crop that grows in specific conditions based on soil and climate factors.`;
+  
+  const tips = [
+    `Optimal planting season for ${crop}`,
+    `Ensure proper irrigation for ${crop}`,
+    `Monitor for common pests that affect ${crop}`
+  ];
+  
+  return {
+    description,
+    tips
+  };
+};
+
 const CropRecommendation = () => {
   const [soilType, setSoilType] = useState('');
   const [soilpH, setSoilpH] = useState('');
@@ -24,6 +55,9 @@ const CropRecommendation = () => {
   const [humidity, setHumidity] = useState('');
   const [rainfall, setRainfall] = useState('');
   const [location, setLocation] = useState('');
+  const [nitrogen, setNitrogen] = useState('');
+  const [phosphorus, setPhosphorus] = useState('');
+  const [potassium, setPotassium] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [results, setResults] = useState<CropRecommendationResult[]>([]);
   const { toast } = useToast();
@@ -32,52 +66,76 @@ const CropRecommendation = () => {
     e.preventDefault();
     setIsLoading(true);
     
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false);
-      
-      // Simulated results
-      setResults([
-        {
-          crop: 'Rice',
-          confidence: 92,
-          description: 'Rice is a staple food crop in India, requiring high rainfall and humidity.',
-          suitable: true,
-          tips: [
-            'Plant in June-July for kharif season',
-            'Maintain water level of 5cm during tillering',
-            'Consider SRI technique for water conservation'
-          ]
-        },
-        {
-          crop: 'Wheat',
-          confidence: 68,
-          description: 'Wheat is a rabi crop that grows well in moderately cool environments.',
-          suitable: false,
-          tips: [
-            'Not recommended for your current conditions',
-            'Consider planting in winter season',
-            'Requires less water than your current rainfall'
-          ]
-        },
-        {
-          crop: 'Cotton',
-          confidence: 85,
-          description: 'Cotton is a cash crop that thrives in warm weather and well-drained soil.',
-          suitable: true,
-          tips: [
-            'Plant in April-May',
-            'Ensure proper spacing of 60-90cm between plants',
-            'Implement integrated pest management for bollworms'
-          ]
+    try {
+      // Call our edge function
+      const { data, error } = await supabase.functions.invoke('crop-recommendation', {
+        body: {
+          soilType,
+          nitrogen: parseFloat(nitrogen),
+          phosphorus: parseFloat(phosphorus),
+          potassium: parseFloat(potassium),
+          ph: parseFloat(soilpH),
+          temperature: parseFloat(temperature),
+          humidity: parseFloat(humidity),
+          rainfall: parseFloat(rainfall)
         }
-      ]);
+      });
+      
+      if (error) throw error;
+      
+      const recommendedCrop = data.recommendedCrop;
+      const confidence = data.confidence;
+      
+      // Get crop info
+      const { description, tips } = getCropInfo(recommendedCrop);
+      
+      // Create the result
+      const newResults = [
+        {
+          crop: recommendedCrop,
+          confidence: confidence * 100,
+          description,
+          suitable: true,
+          tips
+        }
+      ];
+      
+      // Save to database
+      const { error: dbError } = await supabase
+        .from('crop_recommendations')
+        .insert({
+          soil_type: soilType,
+          nitrogen: parseFloat(nitrogen),
+          phosphorus: parseFloat(phosphorus),
+          potassium: parseFloat(potassium),
+          ph: parseFloat(soilpH),
+          temperature: parseFloat(temperature),
+          humidity: parseFloat(humidity),
+          rainfall: parseFloat(rainfall),
+          recommended_crop: recommendedCrop,
+          confidence: confidence
+        });
+      
+      if (dbError) {
+        console.error("Failed to save to database:", dbError);
+      }
+      
+      setResults(newResults);
       
       toast({
         title: "Recommendations Ready",
         description: "We've analyzed your data and prepared crop recommendations.",
       });
-    }, 2000);
+    } catch (error: any) {
+      console.error("Error in crop recommendation:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to get crop recommendations.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -110,6 +168,45 @@ const CropRecommendation = () => {
                         <SelectItem value="silt">Silt</SelectItem>
                       </SelectContent>
                     </Select>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="nitrogen">Nitrogen (kg/ha)</Label>
+                    <Input 
+                      id="nitrogen" 
+                      type="number" 
+                      placeholder="e.g., 80" 
+                      min="0" 
+                      value={nitrogen}
+                      onChange={(e) => setNitrogen(e.target.value)}
+                      required
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="phosphorus">Phosphorus (kg/ha)</Label>
+                    <Input 
+                      id="phosphorus" 
+                      type="number" 
+                      placeholder="e.g., 45" 
+                      min="0" 
+                      value={phosphorus}
+                      onChange={(e) => setPhosphorus(e.target.value)}
+                      required
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="potassium">Potassium (kg/ha)</Label>
+                    <Input 
+                      id="potassium" 
+                      type="number" 
+                      placeholder="e.g., 60" 
+                      min="0" 
+                      value={potassium}
+                      onChange={(e) => setPotassium(e.target.value)}
+                      required
+                    />
                   </div>
                   
                   <div className="space-y-2">
@@ -215,7 +312,7 @@ const CropRecommendation = () => {
                                 style={{ width: `${result.confidence}%` }}
                               ></div>
                             </div>
-                            <span className="text-sm text-gray-600">{result.confidence}% match</span>
+                            <span className="text-sm text-gray-600">{result.confidence.toFixed(0)}% match</span>
                           </div>
                           <p className="text-gray-700 mb-4">{result.description}</p>
                         </div>

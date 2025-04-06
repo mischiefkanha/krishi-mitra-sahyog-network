@@ -7,41 +7,113 @@ import { BarChart, LineChart, PieChart, Cell, Bar, Line, XAxis, YAxis, Cartesian
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { ArrowUpRight, Sprout, Bug, ShoppingBag, Clipboard, AlertTriangle } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import AIChatAssistant from '@/components/AIChatAssistant';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/components/ui/use-toast';
+
+interface CropRecommendation {
+  id: string;
+  soil_type: string;
+  recommended_crop: string;
+  confidence: number;
+  timestamp: string;
+}
+
+interface DiseaseDetection {
+  id: string;
+  disease_name: string;
+  confidence: number;
+  timestamp: string;
+}
 
 const Dashboard = () => {
   const [activeTab, setActiveTab] = useState('overview');
+  const [cropRecommendations, setCropRecommendations] = useState<CropRecommendation[]>([]);
+  const [diseaseDetections, setDiseaseDetections] = useState<DiseaseDetection[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
 
-  // Sample data for charts
-  const cropData = [
-    { name: 'Rice', value: 35 },
-    { name: 'Wheat', value: 25 },
-    { name: 'Cotton', value: 15 },
-    { name: 'Sugarcane', value: 25 },
-  ];
+  useEffect(() => {
+    fetchUserData();
+  }, []);
 
-  const activityData = [
-    { month: 'Jan', crops: 4, disease: 2, market: 5 },
-    { month: 'Feb', crops: 3, disease: 1, market: 6 },
-    { month: 'Mar', crops: 5, disease: 3, market: 7 },
-    { month: 'Apr', crops: 6, disease: 2, market: 8 },
-    { month: 'May', crops: 8, disease: 4, market: 9 },
-    { month: 'Jun', crops: 7, disease: 3, market: 10 },
-  ];
+  const fetchUserData = async () => {
+    setIsLoading(true);
+    
+    try {
+      // Fetch crop recommendations
+      const { data: cropData, error: cropError } = await supabase
+        .from('crop_recommendations')
+        .select('*')
+        .order('timestamp', { ascending: false });
+        
+      if (cropError) throw cropError;
+      
+      // Fetch disease detections
+      const { data: diseaseData, error: diseaseError } = await supabase
+        .from('disease_detections')
+        .select('*')
+        .order('timestamp', { ascending: false });
+        
+      if (diseaseError) throw diseaseError;
+      
+      setCropRecommendations(cropData || []);
+      setDiseaseDetections(diseaseData || []);
+    } catch (error: any) {
+      console.error("Error fetching user data:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load your data. Please try again later.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-  const recentTransactions = [
-    { id: 1, item: 'Rice (50kg)', amount: '₹2,500', status: 'Completed', date: '2023-04-01' },
-    { id: 2, item: 'Wheat (25kg)', amount: '₹1,200', status: 'Pending', date: '2023-03-29' },
-    { id: 3, item: 'Cotton (10kg)', amount: '₹900', status: 'Completed', date: '2023-03-25' },
-    { id: 4, item: 'Sugarcane (100kg)', amount: '₹1,800', status: 'Completed', date: '2023-03-20' },
-  ];
+  // Process crop data for pie chart
+  const cropData = cropRecommendations.reduce((acc: { name: string, value: number }[], curr) => {
+    const existingIndex = acc.findIndex(item => item.name === curr.recommended_crop);
+    
+    if (existingIndex >= 0) {
+      acc[existingIndex].value += 1;
+    } else {
+      acc.push({
+        name: curr.recommended_crop,
+        value: 1
+      });
+    }
+    
+    return acc;
+  }, []);
 
-  const recentAlerts = [
-    { id: 1, message: 'Possible pest infestation detected in rice crops', severity: 'High', date: '2023-04-02' },
-    { id: 2, message: 'Weather alert: Heavy rainfall expected next week', severity: 'Medium', date: '2023-04-01' },
-    { id: 3, message: 'Market price for wheat increased by 5%', severity: 'Low', date: '2023-03-30' },
-  ];
+  // Group by month for activity chart
+  const getActivityData = () => {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    
+    return months.map(month => {
+      const cropCount = cropRecommendations.filter(item => {
+        const itemMonth = new Date(item.timestamp).getMonth();
+        return months[itemMonth] === month;
+      }).length;
+      
+      const diseaseCount = diseaseDetections.filter(item => {
+        const itemMonth = new Date(item.timestamp).getMonth();
+        return months[itemMonth] === month;
+      }).length;
+      
+      return {
+        month,
+        crops: cropCount,
+        disease: diseaseCount,
+        market: 0 // Placeholder for market data
+      };
+    });
+  };
 
-  const COLORS = ['#4CAF50', '#2E7D32', '#81C784', '#C8E6C9'];
+  const activityData = getActivityData();
+
+  const COLORS = ['#4CAF50', '#2E7D32', '#81C784', '#C8E6C9', '#A5D6A7', '#66BB6A', '#43A047', '#388E3C'];
 
   const chartConfig = {
     crops: { label: "Crops", color: "#4CAF50" },
@@ -57,8 +129,8 @@ const Dashboard = () => {
         <Tabs defaultValue="overview" value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid grid-cols-3 w-full max-w-md mb-6">
             <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="crops">Crops</TabsTrigger>
-            <TabsTrigger value="market">Market</TabsTrigger>
+            <TabsTrigger value="crops">Crop Recommendations</TabsTrigger>
+            <TabsTrigger value="diseases">Disease Detection</TabsTrigger>
           </TabsList>
           
           <TabsContent value="overview" className="space-y-6">
@@ -70,8 +142,12 @@ const Dashboard = () => {
                   <Sprout className="h-4 w-4 text-primary-700" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">12</div>
-                  <p className="text-xs text-muted-foreground">+2 from last month</p>
+                  <div className="text-2xl font-bold">{cropRecommendations.length}</div>
+                  <p className="text-xs text-muted-foreground">
+                    {cropRecommendations.length > 0 
+                      ? `Last added: ${new Date(cropRecommendations[0].timestamp).toLocaleDateString()}` 
+                      : 'No recommendations yet'}
+                  </p>
                 </CardContent>
               </Card>
               
@@ -81,8 +157,12 @@ const Dashboard = () => {
                   <Bug className="h-4 w-4 text-orange-500" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">8</div>
-                  <p className="text-xs text-muted-foreground">+1 from last month</p>
+                  <div className="text-2xl font-bold">{diseaseDetections.length}</div>
+                  <p className="text-xs text-muted-foreground">
+                    {diseaseDetections.length > 0 
+                      ? `Last detected: ${new Date(diseaseDetections[0].timestamp).toLocaleDateString()}` 
+                      : 'No detections yet'}
+                  </p>
                 </CardContent>
               </Card>
               
@@ -92,8 +172,8 @@ const Dashboard = () => {
                   <ShoppingBag className="h-4 w-4 text-blue-500" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">5</div>
-                  <p className="text-xs text-muted-foreground">+3 from last month</p>
+                  <div className="text-2xl font-bold">0</div>
+                  <p className="text-xs text-muted-foreground">Coming soon</p>
                 </CardContent>
               </Card>
               
@@ -103,8 +183,8 @@ const Dashboard = () => {
                   <Clipboard className="h-4 w-4 text-gray-500" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">3</div>
-                  <p className="text-xs text-muted-foreground">Same as last month</p>
+                  <div className="text-2xl font-bold">0</div>
+                  <p className="text-xs text-muted-foreground">Coming soon</p>
                 </CardContent>
               </Card>
             </div>
@@ -114,7 +194,7 @@ const Dashboard = () => {
               <Card>
                 <CardHeader>
                   <CardTitle>Activity Overview</CardTitle>
-                  <CardDescription>Your activities over the last 6 months</CardDescription>
+                  <CardDescription>Your activities over the last months</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <ChartContainer className="h-80" config={chartConfig}>
@@ -126,7 +206,6 @@ const Dashboard = () => {
                       <Legend />
                       <Line type="monotone" dataKey="crops" stroke="#4CAF50" strokeWidth={2} />
                       <Line type="monotone" dataKey="disease" stroke="#FF9800" strokeWidth={2} />
-                      <Line type="monotone" dataKey="market" stroke="#2196F3" strokeWidth={2} />
                     </LineChart>
                   </ChartContainer>
                 </CardContent>
@@ -135,31 +214,37 @@ const Dashboard = () => {
               <Card>
                 <CardHeader>
                   <CardTitle>Crop Distribution</CardTitle>
-                  <CardDescription>Types of crops you've grown</CardDescription>
+                  <CardDescription>Types of crops recommended for you</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="h-80">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie
-                          data={cropData}
-                          cx="50%"
-                          cy="50%"
-                          labelLine={false}
-                          label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                          outerRadius={80}
-                          fill="#8884d8"
-                          dataKey="value"
-                        >
-                          {cropData.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                          ))}
-                        </Pie>
-                        <Tooltip />
-                        <Legend />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  </div>
+                  {cropData.length > 0 ? (
+                    <div className="h-80">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie
+                            data={cropData}
+                            cx="50%"
+                            cy="50%"
+                            labelLine={false}
+                            label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                            outerRadius={80}
+                            fill="#8884d8"
+                            dataKey="value"
+                          >
+                            {cropData.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                            ))}
+                          </Pie>
+                          <Tooltip />
+                          <Legend />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
+                  ) : (
+                    <div className="h-80 flex items-center justify-center">
+                      <p className="text-gray-500">No crop recommendations yet</p>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </div>
@@ -168,38 +253,40 @@ const Dashboard = () => {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <Card>
                 <CardHeader>
-                  <CardTitle>Recent Transactions</CardTitle>
-                  <CardDescription>Your latest marketplace activity</CardDescription>
+                  <CardTitle>Recent Crop Recommendations</CardTitle>
+                  <CardDescription>Your latest crop analysis results</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Item</TableHead>
-                        <TableHead>Amount</TableHead>
-                        <TableHead>Status</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {recentTransactions.map((tx) => (
-                        <TableRow key={tx.id}>
-                          <TableCell>{tx.item}</TableCell>
-                          <TableCell>{tx.amount}</TableCell>
-                          <TableCell>
-                            <span className={`px-2 py-1 rounded-full text-xs ${
-                              tx.status === 'Completed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-                            }`}>
-                              {tx.status}
-                            </span>
-                          </TableCell>
+                  {cropRecommendations.length > 0 ? (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Crop</TableHead>
+                          <TableHead>Soil Type</TableHead>
+                          <TableHead>Confidence</TableHead>
+                          <TableHead>Date</TableHead>
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                      </TableHeader>
+                      <TableBody>
+                        {cropRecommendations.slice(0, 5).map((rec) => (
+                          <TableRow key={rec.id}>
+                            <TableCell className="font-medium">{rec.recommended_crop}</TableCell>
+                            <TableCell>{rec.soil_type}</TableCell>
+                            <TableCell>{(rec.confidence * 100).toFixed(0)}%</TableCell>
+                            <TableCell>{new Date(rec.timestamp).toLocaleDateString()}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  ) : (
+                    <p className="text-center py-8 text-muted-foreground">
+                      No crop recommendations yet. Try the Crop Recommendation feature.
+                    </p>
+                  )}
                 </CardContent>
                 <CardFooter className="flex justify-end">
-                  <a href="/marketplace" className="text-sm text-primary-700 flex items-center">
-                    View all transactions
+                  <a href="/crop-recommendation" className="text-sm text-primary-700 flex items-center">
+                    Get crop recommendations
                     <ArrowUpRight className="ml-1 h-4 w-4" />
                   </a>
                 </CardFooter>
@@ -207,26 +294,41 @@ const Dashboard = () => {
               
               <Card>
                 <CardHeader>
-                  <CardTitle>Alerts & Notifications</CardTitle>
-                  <CardDescription>Important updates for your farm</CardDescription>
+                  <CardTitle>Recent Disease Detections</CardTitle>
+                  <CardDescription>Your latest disease analysis results</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-3">
-                    {recentAlerts.map((alert) => (
-                      <div key={alert.id} className="flex items-start gap-3 p-3 rounded-lg border">
-                        <AlertTriangle className={`h-5 w-5 flex-shrink-0 ${
-                          alert.severity === 'High' ? 'text-red-500' :
-                          alert.severity === 'Medium' ? 'text-orange-500' :
-                          'text-blue-500'
-                        }`} />
-                        <div>
-                          <p className="text-sm font-medium">{alert.message}</p>
-                          <p className="text-xs text-muted-foreground mt-1">{alert.date}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                  {diseaseDetections.length > 0 ? (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Disease</TableHead>
+                          <TableHead>Confidence</TableHead>
+                          <TableHead>Date</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {diseaseDetections.slice(0, 5).map((detection) => (
+                          <TableRow key={detection.id}>
+                            <TableCell className="font-medium">{detection.disease_name}</TableCell>
+                            <TableCell>{(detection.confidence * 100).toFixed(0)}%</TableCell>
+                            <TableCell>{new Date(detection.timestamp).toLocaleDateString()}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  ) : (
+                    <p className="text-center py-8 text-muted-foreground">
+                      No disease detections yet. Try the Disease Detection feature.
+                    </p>
+                  )}
                 </CardContent>
+                <CardFooter className="flex justify-end">
+                  <a href="/disease-detection" className="text-sm text-primary-700 flex items-center">
+                    Detect crop diseases
+                    <ArrowUpRight className="ml-1 h-4 w-4" />
+                  </a>
+                </CardFooter>
               </Card>
             </div>
           </TabsContent>
@@ -234,32 +336,111 @@ const Dashboard = () => {
           <TabsContent value="crops" className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Crop Management</CardTitle>
-                <CardDescription>Detailed information about your crops</CardDescription>
+                <CardTitle>Crop Recommendation History</CardTitle>
+                <CardDescription>All your crop recommendations</CardDescription>
               </CardHeader>
               <CardContent>
-                <p className="text-center py-8 text-muted-foreground">
-                  Detailed crop management interface will be available soon.
-                </p>
+                {cropRecommendations.length > 0 ? (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Date</TableHead>
+                        <TableHead>Recommended Crop</TableHead>
+                        <TableHead>Soil Type</TableHead>
+                        <TableHead>Nitrogen</TableHead>
+                        <TableHead>Phosphorus</TableHead>
+                        <TableHead>Potassium</TableHead>
+                        <TableHead>pH</TableHead>
+                        <TableHead>Confidence</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {cropRecommendations.map((rec) => (
+                        <TableRow key={rec.id}>
+                          <TableCell>{new Date(rec.timestamp).toLocaleDateString()}</TableCell>
+                          <TableCell className="font-medium">{rec.recommended_crop}</TableCell>
+                          <TableCell>{rec.soil_type}</TableCell>
+                          <TableCell>{rec.nitrogen}</TableCell>
+                          <TableCell>{rec.phosphorus}</TableCell>
+                          <TableCell>{rec.potassium}</TableCell>
+                          <TableCell>{rec.ph}</TableCell>
+                          <TableCell>{(rec.confidence * 100).toFixed(0)}%</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                ) : (
+                  <div className="text-center py-12">
+                    <Sprout className="mx-auto h-12 w-12 text-gray-400" />
+                    <h3 className="mt-4 text-lg font-medium text-gray-900">No recommendations yet</h3>
+                    <p className="mt-2 text-gray-500">
+                      Get personalized crop recommendations based on your soil and climate conditions.
+                    </p>
+                    <div className="mt-6">
+                      <a 
+                        href="/crop-recommendation" 
+                        className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700 focus:outline-none"
+                      >
+                        Get Crop Recommendations
+                      </a>
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
           
-          <TabsContent value="market" className="space-y-6">
+          <TabsContent value="diseases" className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Market Analytics</CardTitle>
-                <CardDescription>Insights on prices and demand</CardDescription>
+                <CardTitle>Disease Detection History</CardTitle>
+                <CardDescription>All your disease detection results</CardDescription>
               </CardHeader>
               <CardContent>
-                <p className="text-center py-8 text-muted-foreground">
-                  Market analytics will be available in the next update.
-                </p>
+                {diseaseDetections.length > 0 ? (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Date</TableHead>
+                        <TableHead>Disease</TableHead>
+                        <TableHead>Confidence</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {diseaseDetections.map((detection) => (
+                        <TableRow key={detection.id}>
+                          <TableCell>{new Date(detection.timestamp).toLocaleDateString()}</TableCell>
+                          <TableCell className="font-medium">{detection.disease_name}</TableCell>
+                          <TableCell>{(detection.confidence * 100).toFixed(0)}%</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                ) : (
+                  <div className="text-center py-12">
+                    <Bug className="mx-auto h-12 w-12 text-gray-400" />
+                    <h3 className="mt-4 text-lg font-medium text-gray-900">No disease detections yet</h3>
+                    <p className="mt-2 text-gray-500">
+                      Upload images of your crops to detect diseases and get treatment recommendations.
+                    </p>
+                    <div className="mt-6">
+                      <a 
+                        href="/disease-detection" 
+                        className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700 focus:outline-none"
+                      >
+                        Detect Crop Diseases
+                      </a>
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
         </Tabs>
       </div>
+      
+      {/* AI Chat Assistant */}
+      <AIChatAssistant />
     </Layout>
   );
 };

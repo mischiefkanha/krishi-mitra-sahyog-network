@@ -5,13 +5,15 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
 import { Camera, Upload, X, Loader2, AlertTriangle } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { v4 as uuidv4 } from 'uuid';
 
 interface DetectionResult {
-  disease: string;
+  diseaseName: string;
   confidence: number;
   description: string;
   treatment: string[];
-  severity: 'low' | 'medium' | 'high';
+  severity: 'low' | 'medium' | 'high' | 'unknown';
 }
 
 const DiseaseDetection = () => {
@@ -72,34 +74,82 @@ const DiseaseDetection = () => {
     }
   };
 
-  const handleAnalyze = () => {
+  const handleAnalyze = async () => {
     if (!selectedImage) return;
     
     setIsLoading(true);
     
-    // Simulate API call to disease detection service
-    setTimeout(() => {
-      setIsLoading(false);
+    try {
+      // Upload image to storage
+      const fileName = `${uuidv4()}.jpg`;
+      const filePath = `${fileName}`;
       
-      // Mock result
-      setResult({
-        disease: 'Tomato Late Blight',
-        confidence: 94,
-        description: 'Late blight is a disease of tomato and potato plants that is caused by the fungus-like organism Phytophthora infestans. It spreads quickly in warm, humid conditions.',
-        treatment: [
-          'Remove and destroy infected plant parts',
-          'Apply copper-based fungicide every 7-10 days',
-          'Improve air circulation around plants',
-          'Avoid overhead watering'
-        ],
-        severity: 'medium'
+      // Get base64 data from image
+      const base64Data = selectedImage;
+
+      // Call disease detection edge function
+      const { data, error } = await supabase.functions.invoke('disease-detection', {
+        body: { imageBase64: base64Data }
       });
+      
+      if (error) throw error;
+      
+      // Upload image to storage
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('crop_images')
+        .upload(filePath, base64ToBlob(base64Data), {
+          contentType: 'image/jpeg'
+        });
+        
+      if (uploadError) throw uploadError;
+
+      // Save result to database
+      const { error: dbError } = await supabase
+        .from('disease_detections')
+        .insert({
+          image_path: filePath,
+          disease_name: data.diseaseName,
+          confidence: data.confidence,
+          description: data.description,
+          treatment: data.treatment
+        });
+        
+      if (dbError) {
+        console.error("Failed to save to database:", dbError);
+      }
+      
+      // Set result
+      setResult(data);
       
       toast({
         title: "Analysis Complete",
         description: "We've detected the crop disease. See results below.",
       });
-    }, 2000);
+    } catch (error: any) {
+      console.error("Error in disease detection:", error);
+      toast({
+        title: "Analysis Failed",
+        description: error.message || "Failed to analyze the image.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  // Helper function to convert base64 to blob
+  const base64ToBlob = (base64: string) => {
+    const parts = base64.split(';base64,');
+    const contentType = parts[0].split(':')[1];
+    const raw = window.atob(parts[1]);
+    const rawLength = raw.length;
+    const uInt8Array = new Uint8Array(rawLength);
+    
+    for (let i = 0; i < rawLength; ++i) {
+      uInt8Array[i] = raw.charCodeAt(i);
+    }
+    
+    return new Blob([uInt8Array], { type: contentType });
   };
   
   const captureImage = () => {
@@ -218,7 +268,7 @@ const DiseaseDetection = () => {
                 <Card>
                   <CardContent className="p-6">
                     <div className="flex items-center mb-4">
-                      <h3 className="text-xl font-semibold text-gray-900 mr-3">{result.disease}</h3>
+                      <h3 className="text-xl font-semibold text-gray-900 mr-3">{result.diseaseName}</h3>
                       <div className={`px-2 py-1 rounded text-white text-xs font-medium ${getSeverityColor(result.severity)}`}>
                         {result.severity.charAt(0).toUpperCase() + result.severity.slice(1)} Severity
                       </div>
@@ -228,10 +278,10 @@ const DiseaseDetection = () => {
                       <div className="bg-gray-200 h-2 rounded-full w-32 mr-2">
                         <div 
                           className="h-2 rounded-full bg-primary-600" 
-                          style={{ width: `${result.confidence}%` }}
+                          style={{ width: `${result.confidence * 100}%` }}
                         ></div>
                       </div>
-                      <span className="text-sm text-gray-600">{result.confidence}% confidence</span>
+                      <span className="text-sm text-gray-600">{(result.confidence * 100).toFixed(0)}% confidence</span>
                     </div>
                     
                     <div className="mb-4">

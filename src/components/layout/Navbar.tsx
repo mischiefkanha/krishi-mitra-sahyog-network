@@ -3,9 +3,11 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Menu, X, User, ShoppingCart, LayoutDashboard } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useAuth } from '@/context/AuthContext';
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { user, signOut } = useAuth();
 
   return (
     <nav className="bg-white shadow-md py-4 sticky top-0 z-50">
@@ -22,22 +24,45 @@ const Navbar = () => {
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-8">
             <Link to="/" className="text-gray-700 hover:text-primary-700 font-medium">Home</Link>
-            <Link to="/dashboard" className="text-gray-700 hover:text-primary-700 font-medium">Dashboard</Link>
-            <Link to="/crop-recommendation" className="text-gray-700 hover:text-primary-700 font-medium">Crop Recommendations</Link>
-            <Link to="/disease-detection" className="text-gray-700 hover:text-primary-700 font-medium">Disease Detection</Link>
-            <Link to="/marketplace" className="text-gray-700 hover:text-primary-700 font-medium">Marketplace</Link>
+            {user && (
+              <>
+                <Link to="/dashboard" className="text-gray-700 hover:text-primary-700 font-medium">Dashboard</Link>
+                <Link to="/crop-recommendation" className="text-gray-700 hover:text-primary-700 font-medium">Crop Recommendations</Link>
+                <Link to="/disease-detection" className="text-gray-700 hover:text-primary-700 font-medium">Disease Detection</Link>
+                <Link to="/marketplace" className="text-gray-700 hover:text-primary-700 font-medium">Marketplace</Link>
+              </>
+            )}
           </div>
           
           <div className="hidden md:flex items-center space-x-4">
-            <Link to="/login">
-              <Button variant="outline" className="flex items-center gap-2">
-                <User size={18} />
-                <span>Login</span>
-              </Button>
-            </Link>
-            <Link to="/register">
-              <Button className="bg-primary-600 hover:bg-primary-700">Register</Button>
-            </Link>
+            {user ? (
+              <div className="flex items-center space-x-4">
+                <Link to="/dashboard">
+                  <Button variant="outline" className="flex items-center gap-2">
+                    <LayoutDashboard size={18} />
+                    <span>Dashboard</span>
+                  </Button>
+                </Link>
+                <Button 
+                  className="bg-primary-600 hover:bg-primary-700"
+                  onClick={() => signOut()}
+                >
+                  Sign Out
+                </Button>
+              </div>
+            ) : (
+              <>
+                <Link to="/login">
+                  <Button variant="outline" className="flex items-center gap-2">
+                    <User size={18} />
+                    <span>Login</span>
+                  </Button>
+                </Link>
+                <Link to="/register">
+                  <Button className="bg-primary-600 hover:bg-primary-700">Register</Button>
+                </Link>
+              </>
+            )}
           </div>
           
           {/* Mobile menu button */}
@@ -62,44 +87,64 @@ const Navbar = () => {
               >
                 Home
               </Link>
-              <Link 
-                to="/dashboard" 
-                className="text-gray-700 hover:text-primary-700 font-medium py-2"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                Dashboard
-              </Link>
-              <Link 
-                to="/crop-recommendation" 
-                className="text-gray-700 hover:text-primary-700 font-medium py-2"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                Crop Recommendations
-              </Link>
-              <Link 
-                to="/disease-detection" 
-                className="text-gray-700 hover:text-primary-700 font-medium py-2"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                Disease Detection
-              </Link>
-              <Link 
-                to="/marketplace" 
-                className="text-gray-700 hover:text-primary-700 font-medium py-2"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                Marketplace
-              </Link>
+              {user && (
+                <>
+                  <Link 
+                    to="/dashboard" 
+                    className="text-gray-700 hover:text-primary-700 font-medium py-2"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    Dashboard
+                  </Link>
+                  <Link 
+                    to="/crop-recommendation" 
+                    className="text-gray-700 hover:text-primary-700 font-medium py-2"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    Crop Recommendations
+                  </Link>
+                  <Link 
+                    to="/disease-detection" 
+                    className="text-gray-700 hover:text-primary-700 font-medium py-2"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    Disease Detection
+                  </Link>
+                  <Link 
+                    to="/marketplace" 
+                    className="text-gray-700 hover:text-primary-700 font-medium py-2"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    Marketplace
+                  </Link>
+                </>
+              )}
               <div className="flex space-x-4 pt-2">
-                <Link to="/login" onClick={() => setIsMenuOpen(false)}>
-                  <Button variant="outline" className="flex items-center gap-2">
-                    <User size={18} />
-                    <span>Login</span>
-                  </Button>
-                </Link>
-                <Link to="/register" onClick={() => setIsMenuOpen(false)}>
-                  <Button className="bg-primary-600 hover:bg-primary-700">Register</Button>
-                </Link>
+                {user ? (
+                  <>
+                    <Button 
+                      className="bg-primary-600 hover:bg-primary-700 w-full"
+                      onClick={() => {
+                        signOut();
+                        setIsMenuOpen(false);
+                      }}
+                    >
+                      Sign Out
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Link to="/login" onClick={() => setIsMenuOpen(false)} className="w-1/2">
+                      <Button variant="outline" className="w-full flex items-center justify-center gap-2">
+                        <User size={18} />
+                        <span>Login</span>
+                      </Button>
+                    </Link>
+                    <Link to="/register" onClick={() => setIsMenuOpen(false)} className="w-1/2">
+                      <Button className="w-full bg-primary-600 hover:bg-primary-700">Register</Button>
+                    </Link>
+                  </>
+                )}
               </div>
             </div>
           </div>
