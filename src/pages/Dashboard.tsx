@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import Layout from '@/components/layout/Layout';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import AIChatAssistant from '@/components/AIChatAssistant';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
+import { useAuth } from '@/context/AuthContext';
 
 interface CropRecommendation {
   id: string;
@@ -17,6 +17,10 @@ interface CropRecommendation {
   recommended_crop: string;
   confidence: number;
   timestamp: string;
+  nitrogen?: number;
+  phosphorus?: number;
+  potassium?: number;
+  ph?: number;
 }
 
 interface DiseaseDetection {
@@ -32,12 +36,17 @@ const Dashboard = () => {
   const [diseaseDetections, setDiseaseDetections] = useState<DiseaseDetection[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+  const { user } = useAuth();
 
   useEffect(() => {
-    fetchUserData();
-  }, []);
+    if (user) {
+      fetchUserData();
+    }
+  }, [user]);
 
   const fetchUserData = async () => {
+    if (!user) return;
+    
     setIsLoading(true);
     
     try {

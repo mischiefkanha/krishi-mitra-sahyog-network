@@ -1,4 +1,3 @@
-
 import { useState, useRef } from 'react';
 import Layout from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
@@ -7,6 +6,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { Camera, Upload, X, Loader2, AlertTriangle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { v4 as uuidv4 } from 'uuid';
+import { useAuth } from '@/context/AuthContext';
 
 interface DetectionResult {
   diseaseName: string;
@@ -23,6 +23,7 @@ const DiseaseDetection = () => {
   const [result, setResult] = useState<DetectionResult | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+  const { user } = useAuth();
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -75,7 +76,7 @@ const DiseaseDetection = () => {
   };
 
   const handleAnalyze = async () => {
-    if (!selectedImage) return;
+    if (!selectedImage || !user) return;
     
     setIsLoading(true);
     
@@ -107,6 +108,7 @@ const DiseaseDetection = () => {
       const { error: dbError } = await supabase
         .from('disease_detections')
         .insert({
+          user_id: user.id,
           image_path: filePath,
           disease_name: data.diseaseName,
           confidence: data.confidence,

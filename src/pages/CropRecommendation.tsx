@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import Layout from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
@@ -9,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/components/ui/use-toast';
 import { Loader2, ThumbsUp } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/context/AuthContext';
 
 interface CropRecommendationResult {
   crop: string;
@@ -61,6 +61,7 @@ const CropRecommendation = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [results, setResults] = useState<CropRecommendationResult[]>([]);
   const { toast } = useToast();
+  const { user } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -101,23 +102,26 @@ const CropRecommendation = () => {
       ];
       
       // Save to database
-      const { error: dbError } = await supabase
-        .from('crop_recommendations')
-        .insert({
-          soil_type: soilType,
-          nitrogen: parseFloat(nitrogen),
-          phosphorus: parseFloat(phosphorus),
-          potassium: parseFloat(potassium),
-          ph: parseFloat(soilpH),
-          temperature: parseFloat(temperature),
-          humidity: parseFloat(humidity),
-          rainfall: parseFloat(rainfall),
-          recommended_crop: recommendedCrop,
-          confidence: confidence
-        });
-      
-      if (dbError) {
-        console.error("Failed to save to database:", dbError);
+      if (user) {
+        const { error: dbError } = await supabase
+          .from('crop_recommendations')
+          .insert({
+            user_id: user.id,
+            soil_type: soilType,
+            nitrogen: parseFloat(nitrogen),
+            phosphorus: parseFloat(phosphorus),
+            potassium: parseFloat(potassium),
+            ph: parseFloat(soilpH),
+            temperature: parseFloat(temperature),
+            humidity: parseFloat(humidity),
+            rainfall: parseFloat(rainfall),
+            recommended_crop: recommendedCrop,
+            confidence: confidence
+          });
+        
+        if (dbError) {
+          console.error("Failed to save to database:", dbError);
+        }
       }
       
       setResults(newResults);

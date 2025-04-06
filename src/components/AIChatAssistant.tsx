@@ -66,6 +66,7 @@ const AIChatAssistant = () => {
         const { error: dbError } = await supabase
           .from('chat_history')
           .insert({
+            user_id: user.id,
             user_message: userMessage,
             ai_response: aiResponse
           });
