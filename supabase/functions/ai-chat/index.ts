@@ -25,7 +25,7 @@ serve(async (req) => {
       throw new Error('No message provided');
     }
 
-    // Call the OpenAI API
+    // Call the OpenAI API with the farming assistant system prompt
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -37,17 +37,24 @@ serve(async (req) => {
         messages: [
           { 
             role: 'system', 
-            content: 'You are KrishiMitra, an expert farming assistant. You help farmers with agricultural advice, crop selection, disease prevention, cultivation techniques, and general farming knowledge. Keep responses concise and practical.' 
+            content: 'You are KrishiMitra, an expert farming assistant. You help farmers with agricultural advice, crop selection, disease prevention, cultivation techniques, pest management, soil health, water management, sustainable farming practices, and market information. Your responses should be practical, accessible, and specifically tailored to the context of farming. Keep your responses concise and informative.' 
           },
           { 
             role: 'user', 
             content: message 
           }
         ],
+        temperature: 0.7,
+        max_tokens: 500
       }),
     });
 
     const result = await response.json();
+    
+    if (result.error) {
+      throw new Error(`OpenAI API error: ${result.error.message}`);
+    }
+    
     const aiResponse = result.choices[0].message.content;
 
     return new Response(

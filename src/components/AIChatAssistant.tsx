@@ -44,7 +44,11 @@ const AIChatAssistant = () => {
     setMessage('');
     
     // Add user message
-    setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
+    setMessages(prev => [...prev, { 
+      role: 'user', 
+      content: userMessage,
+      timestamp: new Date().toISOString()
+    }]);
     
     setIsLoading(true);
     
@@ -59,7 +63,11 @@ const AIChatAssistant = () => {
       const aiResponse = data.response;
       
       // Add AI response
-      setMessages(prev => [...prev, { role: 'assistant', content: aiResponse }]);
+      setMessages(prev => [...prev, { 
+        role: 'assistant', 
+        content: aiResponse,
+        timestamp: new Date().toISOString()
+      }]);
       
       // Save to database
       if (user) {
@@ -81,7 +89,8 @@ const AIChatAssistant = () => {
       // Add error message
       setMessages(prev => [...prev, { 
         role: 'assistant', 
-        content: 'Sorry, I encountered an error. Please try again later.' 
+        content: 'Sorry, I encountered an error. Please try again later.',
+        timestamp: new Date().toISOString()
       }]);
       
       toast({
