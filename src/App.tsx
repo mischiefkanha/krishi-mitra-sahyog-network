@@ -11,62 +11,86 @@ import CropRecommendation from "./pages/CropRecommendation";
 import DiseaseDetection from "./pages/DiseaseDetection";
 import Marketplace from "./pages/Marketplace";
 import Dashboard from "./pages/Dashboard";
+import Profile from "./pages/Profile";
+import Feedback from "./pages/Feedback";
 import NotFound from "./pages/NotFound";
 import TestBackend from "./pages/TestBackend";
 import { AuthProvider } from "./context/AuthContext";
+import { ThemeProvider } from "./context/ThemeContext";
+import { LanguageProvider } from "./context/LanguageContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <AuthProvider>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route 
-              path="/crop-recommendation" 
-              element={
-                <ProtectedRoute>
-                  <CropRecommendation />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/disease-detection" 
-              element={
-                <ProtectedRoute>
-                  <DiseaseDetection />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/marketplace" 
-              element={
-                <ProtectedRoute>
-                  <Marketplace />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/dashboard" 
-              element={
-                <ProtectedRoute>
-                  <Dashboard />
-                </ProtectedRoute>
-              } 
-            />
-            <Route path="/test-backend" element={<TestBackend />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </AuthProvider>
-      </BrowserRouter>
-    </TooltipProvider>
+    <ThemeProvider>
+      <LanguageProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <AuthProvider>
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/register" element={<Register />} />
+                <Route 
+                  path="/crop-recommendation" 
+                  element={
+                    <ProtectedRoute>
+                      <CropRecommendation />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/disease-detection" 
+                  element={
+                    <ProtectedRoute>
+                      <DiseaseDetection />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/marketplace" 
+                  element={
+                    <ProtectedRoute>
+                      <Marketplace />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/dashboard" 
+                  element={
+                    <ProtectedRoute>
+                      <Dashboard />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/profile" 
+                  element={
+                    <ProtectedRoute>
+                      <Profile />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/feedback" 
+                  element={
+                    <ProtectedRoute>
+                      <Feedback />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route path="/test-backend" element={<TestBackend />} />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </AuthProvider>
+          </BrowserRouter>
+        </TooltipProvider>
+      </LanguageProvider>
+    </ThemeProvider>
   </QueryClientProvider>
 );
 

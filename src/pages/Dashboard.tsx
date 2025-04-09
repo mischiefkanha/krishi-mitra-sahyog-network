@@ -1,15 +1,18 @@
+
 import { useEffect, useState } from 'react';
 import Layout from '@/components/layout/Layout';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { BarChart, LineChart, PieChart, Cell, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Pie } from 'recharts';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
-import { ArrowUpRight, Sprout, Bug, ShoppingBag, Clipboard, AlertTriangle } from 'lucide-react';
+import { ArrowUpRight, Sprout, Bug, ShoppingBag, Clipboard, AlertTriangle, Download } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import AIChatAssistant from '@/components/AIChatAssistant';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/context/AuthContext';
+import { Button } from '@/components/ui/button';
+import { useLanguage } from '@/context/LanguageContext';
+import { generateCropRecommendationReport, generateDiseaseDetectionReport, generateActivityReport } from '@/utils/pdfGenerator';
 
 interface CropRecommendation {
   id: string;
@@ -35,8 +38,10 @@ const Dashboard = () => {
   const [cropRecommendations, setCropRecommendations] = useState<CropRecommendation[]>([]);
   const [diseaseDetections, setDiseaseDetections] = useState<DiseaseDetection[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isGeneratingReport, setIsGeneratingReport] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
+  const { t } = useLanguage();
 
   useEffect(() => {
     if (user) {
@@ -121,7 +126,6 @@ const Dashboard = () => {
   };
 
   const activityData = getActivityData();
-
   const COLORS = ['#4CAF50', '#2E7D32', '#81C784', '#C8E6C9', '#A5D6A7', '#66BB6A', '#43A047', '#388E3C'];
 
   const chartConfig = {
@@ -129,17 +133,88 @@ const Dashboard = () => {
     disease: { label: "Disease", color: "#FF9800" },
     market: { label: "Market", color: "#2196F3" }
   };
+  
+  // Generate and download reports
+  const handleDownloadCropReport = async () => {
+    try {
+      setIsGeneratingReport(true);
+      await generateCropRecommendationReport(cropRecommendations);
+      toast({
+        title: "Report Generated",
+        description: "Your crop recommendations report has been downloaded.",
+      });
+    } catch (error) {
+      console.error("Error generating report:", error);
+      toast({
+        title: "Error",
+        description: "Failed to generate report. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsGeneratingReport(false);
+    }
+  };
+  
+  const handleDownloadDiseaseReport = async () => {
+    try {
+      setIsGeneratingReport(true);
+      await generateDiseaseDetectionReport(diseaseDetections);
+      toast({
+        title: "Report Generated",
+        description: "Your disease detection report has been downloaded.",
+      });
+    } catch (error) {
+      console.error("Error generating report:", error);
+      toast({
+        title: "Error",
+        description: "Failed to generate report. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsGeneratingReport(false);
+    }
+  };
+  
+  const handleDownloadActivityReport = async () => {
+    try {
+      setIsGeneratingReport(true);
+      await generateActivityReport(cropRecommendations, diseaseDetections);
+      toast({
+        title: "Report Generated",
+        description: "Your activity report has been downloaded.",
+      });
+    } catch (error) {
+      console.error("Error generating report:", error);
+      toast({
+        title: "Error",
+        description: "Failed to generate report. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsGeneratingReport(false);
+    }
+  };
 
   return (
     <Layout>
       <div className="container mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold text-primary-900 mb-6">Farmer Dashboard</h1>
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-3xl font-bold text-primary-900 dark:text-primary-400">{t('dashboard')}</h1>
+          <Button 
+            onClick={handleDownloadActivityReport} 
+            disabled={isGeneratingReport}
+            className="flex items-center gap-2"
+          >
+            <Download className="h-4 w-4" />
+            {t('downloadReports')}
+          </Button>
+        </div>
         
         <Tabs defaultValue="overview" value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid grid-cols-3 w-full max-w-md mb-6">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="crops">Crop Recommendations</TabsTrigger>
-            <TabsTrigger value="diseases">Disease Detection</TabsTrigger>
+            <TabsTrigger value="overview">{t('overview')}</TabsTrigger>
+            <TabsTrigger value="crops">{t('crops')}</TabsTrigger>
+            <TabsTrigger value="diseases">{t('diseases')}</TabsTrigger>
           </TabsList>
           
           <TabsContent value="overview" className="space-y-6">
@@ -147,7 +222,7 @@ const Dashboard = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium">Crop Recommendations</CardTitle>
+                  <CardTitle className="text-sm font-medium">{t('cropRecommendation')}</CardTitle>
                   <Sprout className="h-4 w-4 text-primary-700" />
                 </CardHeader>
                 <CardContent>
@@ -162,7 +237,7 @@ const Dashboard = () => {
               
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium">Disease Detections</CardTitle>
+                  <CardTitle className="text-sm font-medium">{t('diseases')}</CardTitle>
                   <Bug className="h-4 w-4 text-orange-500" />
                 </CardHeader>
                 <CardContent>
@@ -202,11 +277,11 @@ const Dashboard = () => {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <Card>
                 <CardHeader>
-                  <CardTitle>Activity Overview</CardTitle>
+                  <CardTitle>{t('activity')}</CardTitle>
                   <CardDescription>Your activities over the last months</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <ChartContainer className="h-80" config={chartConfig}>
+                  <ChartContainer id="activity-chart" className="h-80" config={chartConfig}>
                     <LineChart data={activityData}>
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="month" />
@@ -221,13 +296,25 @@ const Dashboard = () => {
               </Card>
               
               <Card>
-                <CardHeader>
-                  <CardTitle>Crop Distribution</CardTitle>
-                  <CardDescription>Types of crops recommended for you</CardDescription>
+                <CardHeader className="flex justify-between items-start">
+                  <div>
+                    <CardTitle>{t('cropDistribution')}</CardTitle>
+                    <CardDescription>Types of crops recommended for you</CardDescription>
+                  </div>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={handleDownloadCropReport}
+                    disabled={isGeneratingReport || cropData.length === 0}
+                    className="flex items-center gap-1"
+                  >
+                    <Download className="h-3 w-3" />
+                    Export
+                  </Button>
                 </CardHeader>
                 <CardContent>
                   {cropData.length > 0 ? (
-                    <div className="h-80">
+                    <div id="crop-distribution-chart" className="h-80">
                       <ResponsiveContainer width="100%" height="100%">
                         <PieChart>
                           <Pie
@@ -261,9 +348,21 @@ const Dashboard = () => {
             {/* Recent Activity Tables */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <Card>
-                <CardHeader>
-                  <CardTitle>Recent Crop Recommendations</CardTitle>
-                  <CardDescription>Your latest crop analysis results</CardDescription>
+                <CardHeader className="flex justify-between items-start">
+                  <div>
+                    <CardTitle>{t('recentCropRecommendations')}</CardTitle>
+                    <CardDescription>Your latest crop analysis results</CardDescription>
+                  </div>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={handleDownloadCropReport}
+                    disabled={isGeneratingReport || cropRecommendations.length === 0}
+                    className="flex items-center gap-1"
+                  >
+                    <Download className="h-3 w-3" />
+                    Export
+                  </Button>
                 </CardHeader>
                 <CardContent>
                   {cropRecommendations.length > 0 ? (
@@ -302,9 +401,21 @@ const Dashboard = () => {
               </Card>
               
               <Card>
-                <CardHeader>
-                  <CardTitle>Recent Disease Detections</CardTitle>
-                  <CardDescription>Your latest disease analysis results</CardDescription>
+                <CardHeader className="flex justify-between items-start">
+                  <div>
+                    <CardTitle>{t('recentDiseaseDetections')}</CardTitle>
+                    <CardDescription>Your latest disease analysis results</CardDescription>
+                  </div>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={handleDownloadDiseaseReport}
+                    disabled={isGeneratingReport || diseaseDetections.length === 0}
+                    className="flex items-center gap-1"
+                  >
+                    <Download className="h-3 w-3" />
+                    Export
+                  </Button>
                 </CardHeader>
                 <CardContent>
                   {diseaseDetections.length > 0 ? (
@@ -344,9 +455,20 @@ const Dashboard = () => {
           
           <TabsContent value="crops" className="space-y-6">
             <Card>
-              <CardHeader>
-                <CardTitle>Crop Recommendation History</CardTitle>
-                <CardDescription>All your crop recommendations</CardDescription>
+              <CardHeader className="flex justify-between items-center">
+                <div>
+                  <CardTitle>Crop Recommendation History</CardTitle>
+                  <CardDescription>All your crop recommendations</CardDescription>
+                </div>
+                <Button 
+                  variant="outline" 
+                  onClick={handleDownloadCropReport}
+                  disabled={isGeneratingReport || cropRecommendations.length === 0}
+                  className="flex items-center gap-2"
+                >
+                  <Download className="h-4 w-4" />
+                  Export Report
+                </Button>
               </CardHeader>
               <CardContent>
                 {cropRecommendations.length > 0 ? (
@@ -381,8 +503,8 @@ const Dashboard = () => {
                 ) : (
                   <div className="text-center py-12">
                     <Sprout className="mx-auto h-12 w-12 text-gray-400" />
-                    <h3 className="mt-4 text-lg font-medium text-gray-900">No recommendations yet</h3>
-                    <p className="mt-2 text-gray-500">
+                    <h3 className="mt-4 text-lg font-medium text-gray-900 dark:text-gray-100">No recommendations yet</h3>
+                    <p className="mt-2 text-gray-500 dark:text-gray-400">
                       Get personalized crop recommendations based on your soil and climate conditions.
                     </p>
                     <div className="mt-6">
@@ -401,9 +523,20 @@ const Dashboard = () => {
           
           <TabsContent value="diseases" className="space-y-6">
             <Card>
-              <CardHeader>
-                <CardTitle>Disease Detection History</CardTitle>
-                <CardDescription>All your disease detection results</CardDescription>
+              <CardHeader className="flex justify-between items-center">
+                <div>
+                  <CardTitle>Disease Detection History</CardTitle>
+                  <CardDescription>All your disease detection results</CardDescription>
+                </div>
+                <Button 
+                  variant="outline" 
+                  onClick={handleDownloadDiseaseReport}
+                  disabled={isGeneratingReport || diseaseDetections.length === 0}
+                  className="flex items-center gap-2"
+                >
+                  <Download className="h-4 w-4" />
+                  Export Report
+                </Button>
               </CardHeader>
               <CardContent>
                 {diseaseDetections.length > 0 ? (
@@ -428,8 +561,8 @@ const Dashboard = () => {
                 ) : (
                   <div className="text-center py-12">
                     <Bug className="mx-auto h-12 w-12 text-gray-400" />
-                    <h3 className="mt-4 text-lg font-medium text-gray-900">No disease detections yet</h3>
-                    <p className="mt-2 text-gray-500">
+                    <h3 className="mt-4 text-lg font-medium text-gray-900 dark:text-gray-100">No disease detections yet</h3>
+                    <p className="mt-2 text-gray-500 dark:text-gray-400">
                       Upload images of your crops to detect diseases and get treatment recommendations.
                     </p>
                     <div className="mt-6">
@@ -447,9 +580,6 @@ const Dashboard = () => {
           </TabsContent>
         </Tabs>
       </div>
-      
-      {/* AI Chat Assistant */}
-      <AIChatAssistant />
     </Layout>
   );
 };
