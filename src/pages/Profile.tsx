@@ -16,6 +16,19 @@ import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/context/LanguageContext';
+import { generateCropRecommendationReport, generateDiseaseDetectionReport, generateActivityReport } from '@/utils/pdfGenerator';
+
+// Define profile interface to match our Supabase table
+interface Profile {
+  id: string;
+  first_name: string | null;
+  last_name: string | null;
+  phone: string | null;
+  address: string | null;
+  bio: string | null;
+  avatar_url: string | null;
+  updated_at: string | null;
+}
 
 // Define form schema
 const profileSchema = z.object({
@@ -36,6 +49,8 @@ const Profile = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('personal');
+  const [recentCropData, setRecentCropData] = useState<any[]>([]);
+  const [recentDiseaseData, setRecentDiseaseData] = useState<any[]>([]);
 
   // Initialize form
   const form = useForm<ProfileFormValues>({
@@ -83,6 +98,31 @@ const Profile = () => {
             setProfileImage(data.avatar_url);
           }
         }
+
+        // Fetch recent crop recommendations
+        const { data: cropData } = await supabase
+          .from('crop_recommendations')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('timestamp', { ascending: false })
+          .limit(5);
+
+        if (cropData) {
+          setRecentCropData(cropData);
+        }
+
+        // Fetch recent disease detections
+        const { data: diseaseData } = await supabase
+          .from('disease_detections')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('timestamp', { ascending: false })
+          .limit(5);
+
+        if (diseaseData) {
+          setRecentDiseaseData(diseaseData);
+        }
+        
       } catch (error) {
         console.error('Error fetching profile:', error);
         toast({
@@ -181,6 +221,31 @@ const Profile = () => {
       });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // Handle report download
+  const handleReportDownload = (reportType: 'crop' | 'disease' | 'activity') => {
+    try {
+      if (reportType === 'crop') {
+        generateCropRecommendationReport(recentCropData);
+      } else if (reportType === 'disease') {
+        generateDiseaseDetectionReport(recentDiseaseData);
+      } else if (reportType === 'activity') {
+        generateActivityReport(recentCropData, recentDiseaseData);
+      }
+
+      toast({
+        title: 'Report generated',
+        description: 'Your report has been generated and downloaded.',
+      });
+    } catch (error) {
+      console.error('Error generating report:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to generate report. Please try again.',
+        variant: 'destructive',
+      });
     }
   };
 
@@ -367,7 +432,7 @@ const Profile = () => {
                       <div className="border-b pb-4">
                         <h3 className="font-medium mb-1">Crop Recommendations</h3>
                         <p className="text-sm text-muted-foreground">
-                          You've received {0} crop recommendations in the last 30 days.
+                          You've received {recentCropData.length} crop recommendations in the last 30 days.
                         </p>
                         <Button variant="link" className="px-0" asChild>
                           <a href="/crop-recommendation">Get new crop recommendations</a>
@@ -376,7 +441,7 @@ const Profile = () => {
                       <div className="border-b pb-4">
                         <h3 className="font-medium mb-1">Disease Detections</h3>
                         <p className="text-sm text-muted-foreground">
-                          You've performed {0} disease detections in the last 30 days.
+                          You've performed {recentDiseaseData.length} disease detections in the last 30 days.
                         </p>
                         <Button variant="link" className="px-0" asChild>
                           <a href="/disease-detection">Detect crop diseases</a>
@@ -393,6 +458,16 @@ const Profile = () => {
                       </div>
                     </div>
                   </CardContent>
+                  <CardFooter>
+                    <Button 
+                      variant="outline" 
+                      onClick={() => handleReportDownload('activity')}
+                      className="ml-auto"
+                    >
+                      <FileUpIcon className="h-4 w-4 mr-2" />
+                      Download Activity Report
+                    </Button>
+                  </CardFooter>
                 </Card>
               </TabsContent>
               
@@ -416,7 +491,11 @@ const Profile = () => {
                               </p>
                             </div>
                           </div>
-                          <Button variant="outline" size="sm">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleReportDownload('crop')}
+                          >
                             Download
                           </Button>
                         </div>
@@ -432,7 +511,11 @@ const Profile = () => {
                               </p>
                             </div>
                           </div>
-                          <Button variant="outline" size="sm">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleReportDownload('disease')}
+                          >
                             Download
                           </Button>
                         </div>
@@ -448,7 +531,11 @@ const Profile = () => {
                               </p>
                             </div>
                           </div>
-                          <Button variant="outline" size="sm">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleReportDownload('activity')}
+                          >
                             Download
                           </Button>
                         </div>

@@ -97,28 +97,40 @@ export const generateCropRecommendationReport = async (cropData: any[]) => {
     crop.phosphorus?.toString() || 'N/A',
     crop.potassium?.toString() || 'N/A',
     crop.ph?.toString() || 'N/A',
-    `${(crop.confidence * 100).toFixed(0)}%`
+    `${(crop.confidence ? crop.confidence * 100 : 0).toFixed(0)}%`
   ]);
   
-  await generatePDF('Crop Recommendations Report', [{ headers, rows }], [
-    { elementId: 'crop-distribution-chart', title: 'Crop Distribution' }
-  ]);
+  await generatePDF('Crop Recommendations Report', [{ headers, rows }]);
 };
 
 export const generateDiseaseDetectionReport = async (diseaseData: any[]) => {
-  const headers = ['Date', 'Disease', 'Confidence'];
+  const headers = ['Date', 'Disease', 'Confidence', 'Treatments'];
   const rows = diseaseData.map(disease => [
     new Date(disease.timestamp).toLocaleDateString(),
     disease.disease_name,
-    `${(disease.confidence * 100).toFixed(0)}%`
+    `${(disease.confidence ? disease.confidence * 100 : 0).toFixed(0)}%`,
+    (disease.treatment || []).join(', ')
   ]);
   
   await generatePDF('Disease Detection Report', [{ headers, rows }]);
 };
 
 export const generateActivityReport = async (cropData: any[], diseaseData: any[]) => {
-  await generatePDF('Farmer Activity Report', [], [
-    { elementId: 'activity-chart', title: 'Monthly Activity' },
-    { elementId: 'crop-distribution-chart', title: 'Crop Distribution' }
+  const cropHeaders = ['Date', 'Recommended Crop', 'Soil Type'];
+  const cropRows = cropData.map(crop => [
+    new Date(crop.timestamp).toLocaleDateString(),
+    crop.recommended_crop,
+    crop.soil_type,
+  ]);
+  
+  const diseaseHeaders = ['Date', 'Disease'];
+  const diseaseRows = diseaseData.map(disease => [
+    new Date(disease.timestamp).toLocaleDateString(),
+    disease.disease_name,
+  ]);
+  
+  await generatePDF('Farmer Activity Report', [
+    { headers: cropHeaders, rows: cropRows },
+    { headers: diseaseHeaders, rows: diseaseRows }
   ]);
 };
