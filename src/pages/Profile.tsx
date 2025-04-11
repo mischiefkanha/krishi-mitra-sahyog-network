@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import Layout from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
@@ -97,14 +96,12 @@ const Profile = () => {
     if (!user) return;
     
     try {
-      // Fetch crop recommendations
       const { data: cropRecommendations } = await supabase
         .from('crop_recommendations')
         .select('*')
         .eq('user_id', user.id)
         .order('timestamp', { ascending: false });
       
-      // Fetch disease detections
       const { data: diseaseDetections } = await supabase
         .from('disease_detections')
         .select('*')
@@ -132,7 +129,6 @@ const Profile = () => {
     if (file) {
       setAvatarFile(file);
       
-      // Create preview URL
       const reader = new FileReader();
       reader.onloadend = () => {
         setPreviewUrl(reader.result as string);
@@ -149,7 +145,6 @@ const Profile = () => {
     try {
       let avatarUrl = formData.avatarUrl;
       
-      // Upload new avatar if selected
       if (avatarFile) {
         const fileExt = avatarFile.name.split('.').pop();
         const fileName = `${user.id}-${Math.random().toString(36).substring(2)}.${fileExt}`;
@@ -160,7 +155,6 @@ const Profile = () => {
         
         if (uploadError) throw uploadError;
         
-        // Get public URL
         const { data: publicUrlData } = supabase.storage
           .from('avatars')
           .getPublicUrl(fileName);
@@ -168,7 +162,6 @@ const Profile = () => {
         avatarUrl = publicUrlData.publicUrl;
       }
       
-      // Update profile data
       const { error } = await supabase
         .from('profiles')
         .upsert({
@@ -185,15 +178,15 @@ const Profile = () => {
       if (error) throw error;
       
       toast({
-        title: t('Profile Updated'),
-        description: t('Your profile has been successfully updated.'),
+        title: t('profileUpdated'),
+        description: t('profileUpdateSuccess'),
       });
       
     } catch (error) {
       console.error('Error updating profile:', error);
       toast({
-        title: t('Update Failed'),
-        description: t('There was a problem updating your profile.'),
+        title: t('updateFailed'),
+        description: t('profileUpdateError'),
         variant: 'destructive',
       });
     } finally {
@@ -206,27 +199,27 @@ const Profile = () => {
       if (reportType === 'crop') {
         await generateCropRecommendationReport(cropData);
         toast({
-          title: t('Report Generated'),
-          description: t('Crop recommendation report has been downloaded.'),
+          title: t('reportGenerated'),
+          description: t('cropReportDownloaded'),
         });
       } else if (reportType === 'disease') {
         await generateDiseaseDetectionReport(diseaseData);
         toast({
-          title: t('Report Generated'),
-          description: t('Disease detection report has been downloaded.'),
+          title: t('reportGenerated'),
+          description: t('diseaseReportDownloaded'),
         });
       } else {
         await generateActivityReport(cropData, diseaseData);
         toast({
-          title: t('Report Generated'),
-          description: t('Activity report has been downloaded.'),
+          title: t('reportGenerated'),
+          description: t('activityReportDownloaded'),
         });
       }
     } catch (error) {
       console.error('Error generating report:', error);
       toast({
-        title: t('Report Generation Failed'),
-        description: t('There was a problem generating your report.'),
+        title: t('reportGenerationFailed'),
+        description: t('reportGenerationError'),
         variant: 'destructive',
       });
     }
@@ -236,7 +229,7 @@ const Profile = () => {
     return (
       <Layout>
         <div className="container mx-auto px-4 py-12">
-          <p>{t('Please log in to view your profile.')}</p>
+          <p>{t('pleaseLogin')}</p>
         </div>
       </Layout>
     );
@@ -245,18 +238,18 @@ const Profile = () => {
   return (
     <Layout>
       <div className="container mx-auto px-4 py-12">
-        <h1 className="text-3xl font-bold mb-8">{t('My Profile')}</h1>
+        <h1 className="text-3xl font-bold mb-8">{t('myProfile')}</h1>
         
         <Tabs defaultValue="profile" className="w-full">
           <TabsList>
-            <TabsTrigger value="profile">{t('Profile Information')}</TabsTrigger>
-            <TabsTrigger value="activity">{t('My Activity')}</TabsTrigger>
+            <TabsTrigger value="profile">{t('profileInfo')}</TabsTrigger>
+            <TabsTrigger value="activity">{t('myActivity')}</TabsTrigger>
           </TabsList>
           
           <TabsContent value="profile" className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>{t('Personal Information')}</CardTitle>
+                <CardTitle>{t('personalInfo')}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="flex flex-col md:flex-row gap-6">
@@ -272,7 +265,7 @@ const Profile = () => {
                       <label htmlFor="avatar-upload" className="cursor-pointer">
                         <div className="flex items-center gap-2 bg-secondary text-secondary-foreground hover:bg-secondary/80 h-9 px-4 py-2 rounded-md text-sm font-medium">
                           <Camera className="w-4 h-4" />
-                          {t('Change Photo')}
+                          {t('changePhoto')}
                         </div>
                         <input
                           id="avatar-upload"
@@ -292,58 +285,58 @@ const Profile = () => {
                   <div className="md:w-2/3 space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="firstName">{t('First Name')}</Label>
+                        <Label htmlFor="firstName">{t('firstName')}</Label>
                         <Input 
                           id="firstName"
                           name="firstName"
                           value={formData.firstName}
                           onChange={handleFormChange}
-                          placeholder={t('Enter your first name')}
+                          placeholder={t('enterFirstName')}
                         />
                       </div>
                       
                       <div className="space-y-2">
-                        <Label htmlFor="lastName">{t('Last Name')}</Label>
+                        <Label htmlFor="lastName">{t('lastName')}</Label>
                         <Input 
                           id="lastName"
                           name="lastName"
                           value={formData.lastName}
                           onChange={handleFormChange}
-                          placeholder={t('Enter your last name')}
+                          placeholder={t('enterLastName')}
                         />
                       </div>
                     </div>
                     
                     <div className="space-y-2">
-                      <Label htmlFor="phone">{t('Phone Number')}</Label>
+                      <Label htmlFor="phone">{t('phoneNumber')}</Label>
                       <Input 
                         id="phone"
                         name="phone"
                         value={formData.phone}
                         onChange={handleFormChange}
-                        placeholder={t('Enter your phone number')}
+                        placeholder={t('enterPhone')}
                       />
                     </div>
                     
                     <div className="space-y-2">
-                      <Label htmlFor="address">{t('Address')}</Label>
+                      <Label htmlFor="address">{t('address')}</Label>
                       <Input 
                         id="address"
                         name="address"
                         value={formData.address}
                         onChange={handleFormChange}
-                        placeholder={t('Enter your address')}
+                        placeholder={t('enterAddress')}
                       />
                     </div>
                     
                     <div className="space-y-2">
-                      <Label htmlFor="bio">{t('Bio')}</Label>
+                      <Label htmlFor="bio">{t('bio')}</Label>
                       <Textarea 
                         id="bio"
                         name="bio"
                         value={formData.bio}
                         onChange={handleFormChange}
-                        placeholder={t('Tell us a little about yourself')}
+                        placeholder={t('bioPlaceholder')}
                         rows={4}
                       />
                     </div>
@@ -354,7 +347,7 @@ const Profile = () => {
                       className="mt-4"
                     >
                       <Save className="w-4 h-4 mr-2" />
-                      {isLoading ? t('Saving...') : t('Save Profile')}
+                      {isLoading ? t('saving') : t('saveProfile')}
                     </Button>
                   </div>
                 </div>
@@ -366,33 +359,33 @@ const Profile = () => {
             <div className="flex flex-wrap gap-4 mb-6">
               <Button variant="outline" onClick={() => generateReport('crop')}>
                 <Download className="w-4 h-4 mr-2" />
-                {t('Download Crop Recommendations')}
+                {t('downloadCropRecommendations')}
               </Button>
               
               <Button variant="outline" onClick={() => generateReport('disease')}>
                 <Download className="w-4 h-4 mr-2" />
-                {t('Download Disease Detections')}
+                {t('downloadDiseaseDetections')}
               </Button>
               
               <Button variant="outline" onClick={() => generateReport('all')}>
                 <Download className="w-4 h-4 mr-2" />
-                {t('Download Complete Activity')}
+                {t('downloadCompleteActivity')}
               </Button>
             </div>
             
             <Card>
               <CardHeader>
-                <CardTitle>{t('Recent Crop Recommendations')}</CardTitle>
+                <CardTitle>{t('recentCropRecommendations')}</CardTitle>
               </CardHeader>
               <CardContent>
                 {cropData.length > 0 ? (
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>{t('Date')}</TableHead>
-                        <TableHead>{t('Crop')}</TableHead>
-                        <TableHead>{t('Soil Type')}</TableHead>
-                        <TableHead>{t('Confidence')}</TableHead>
+                        <TableHead>{t('date')}</TableHead>
+                        <TableHead>{t('crop')}</TableHead>
+                        <TableHead>{t('soilType')}</TableHead>
+                        <TableHead>{t('confidence')}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -411,23 +404,23 @@ const Profile = () => {
                     </TableBody>
                   </Table>
                 ) : (
-                  <p className="text-center py-4">{t('No crop recommendations found.')}</p>
+                  <p className="text-center py-4">{t('noCropRecommendations')}</p>
                 )}
               </CardContent>
             </Card>
             
             <Card>
               <CardHeader>
-                <CardTitle>{t('Recent Disease Detections')}</CardTitle>
+                <CardTitle>{t('recentDiseaseDetections')}</CardTitle>
               </CardHeader>
               <CardContent>
                 {diseaseData.length > 0 ? (
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>{t('Date')}</TableHead>
-                        <TableHead>{t('Disease')}</TableHead>
-                        <TableHead>{t('Confidence')}</TableHead>
+                        <TableHead>{t('date')}</TableHead>
+                        <TableHead>{t('disease')}</TableHead>
+                        <TableHead>{t('confidence')}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -445,7 +438,7 @@ const Profile = () => {
                     </TableBody>
                   </Table>
                 ) : (
-                  <p className="text-center py-4">{t('No disease detections found.')}</p>
+                  <p className="text-center py-4">{t('noDiseaseDetections')}</p>
                 )}
               </CardContent>
             </Card>
