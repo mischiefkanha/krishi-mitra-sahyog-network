@@ -1,25 +1,31 @@
 
 import { useState, useEffect } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
-import { Camera, FileUpIcon, Save, User } from 'lucide-react';
 import Layout from '@/components/layout/Layout';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/components/ui/use-toast';
-import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { useLanguage } from '@/context/LanguageContext';
+import { useAuth } from '@/context/AuthContext';
+import { useTranslation } from '@/context/LanguageContext';
 import { generateCropRecommendationReport, generateDiseaseDetectionReport, generateActivityReport } from '@/utils/pdfGenerator';
+import { Download, UserCircle, Save, Camera } from 'lucide-react';
 
-// Define profile interface to match our Supabase table
-interface Profile {
+interface ProfileFormData {
+  firstName: string;
+  lastName: string;
+  phone: string;
+  address: string;
+  bio: string;
+  avatarUrl: string | null;
+}
+
+interface ProfileData {
   id: string;
   first_name: string | null;
   last_name: string | null;
@@ -27,147 +33,167 @@ interface Profile {
   address: string | null;
   bio: string | null;
   avatar_url: string | null;
-  updated_at: string | null;
 }
-
-// Define form schema
-const profileSchema = z.object({
-  first_name: z.string().min(1, 'First name is required'),
-  last_name: z.string().min(1, 'Last name is required'),
-  email: z.string().email('Invalid email address').optional(),
-  phone: z.string().optional(),
-  address: z.string().optional(),
-  bio: z.string().optional(),
-});
-
-type ProfileFormValues = z.infer<typeof profileSchema>;
 
 const Profile = () => {
   const { user } = useAuth();
-  const { t } = useLanguage();
+  const { t } = useTranslation();
   const { toast } = useToast();
+  
   const [isLoading, setIsLoading] = useState(false);
-  const [profileImage, setProfileImage] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState('personal');
-  const [recentCropData, setRecentCropData] = useState<any[]>([]);
-  const [recentDiseaseData, setRecentDiseaseData] = useState<any[]>([]);
-
-  // Initialize form
-  const form = useForm<ProfileFormValues>({
-    resolver: zodResolver(profileSchema),
-    defaultValues: {
-      first_name: '',
-      last_name: '',
-      email: user?.email || '',
-      phone: '',
-      address: '',
-      bio: '',
-    },
+  const [cropData, setCropData] = useState<any[]>([]);
+  const [diseaseData, setDiseaseData] = useState<any[]>([]);
+  const [formData, setFormData] = useState<ProfileFormData>({
+    firstName: '',
+    lastName: '',
+    phone: '',
+    address: '',
+    bio: '',
+    avatarUrl: null
   });
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
-  // Fetch profile data
   useEffect(() => {
-    const fetchProfile = async () => {
-      if (!user) return;
+    if (user) {
+      fetchProfileData();
+      fetchUserActivity();
+    }
+  }, [user]);
 
-      try {
-        setIsLoading(true);
-        
-        // Get profile data from public.profiles table
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', user.id)
-          .single();
-          
-        if (error) throw error;
-        
-        if (data) {
-          // Update form with fetched data
-          form.reset({
-            first_name: data.first_name || '',
-            last_name: data.last_name || '',
-            email: user.email || '',
-            phone: data.phone || '',
-            address: data.address || '',
-            bio: data.bio || '',
-          });
-          
-          // Set profile image if exists
-          if (data.avatar_url) {
-            setProfileImage(data.avatar_url);
-          }
-        }
-
-        // Fetch recent crop recommendations
-        const { data: cropData } = await supabase
-          .from('crop_recommendations')
-          .select('*')
-          .eq('user_id', user.id)
-          .order('timestamp', { ascending: false })
-          .limit(5);
-
-        if (cropData) {
-          setRecentCropData(cropData);
-        }
-
-        // Fetch recent disease detections
-        const { data: diseaseData } = await supabase
-          .from('disease_detections')
-          .select('*')
-          .eq('user_id', user.id)
-          .order('timestamp', { ascending: false })
-          .limit(5);
-
-        if (diseaseData) {
-          setRecentDiseaseData(diseaseData);
-        }
-        
-      } catch (error) {
-        console.error('Error fetching profile:', error);
-        toast({
-          title: 'Error',
-          description: 'Failed to load profile data.',
-          variant: 'destructive',
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchProfile();
-  }, [user, form, toast]);
-
-  // Handle form submission
-  const onSubmit = async (data: ProfileFormValues) => {
+  const fetchProfileData = async () => {
     if (!user) return;
     
     try {
-      setIsLoading(true);
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
       
+      if (error) throw error;
+      
+      if (data) {
+        const profileData = data as ProfileData;
+        setFormData({
+          firstName: profileData.first_name || '',
+          lastName: profileData.last_name || '',
+          phone: profileData.phone || '',
+          address: profileData.address || '',
+          bio: profileData.bio || '',
+          avatarUrl: profileData.avatar_url
+        });
+        
+        if (profileData.avatar_url) {
+          setPreviewUrl(profileData.avatar_url);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching profile:', error);
+    }
+  };
+
+  const fetchUserActivity = async () => {
+    if (!user) return;
+    
+    try {
+      // Fetch crop recommendations
+      const { data: cropRecommendations } = await supabase
+        .from('crop_recommendations')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('timestamp', { ascending: false });
+      
+      // Fetch disease detections
+      const { data: diseaseDetections } = await supabase
+        .from('disease_detections')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('timestamp', { ascending: false });
+      
+      if (cropRecommendations) setCropData(cropRecommendations);
+      if (diseaseDetections) setDiseaseData(diseaseDetections);
+      
+    } catch (error) {
+      console.error('Error fetching user activity:', error);
+    }
+  };
+
+  const handleFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setAvatarFile(file);
+      
+      // Create preview URL
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPreviewUrl(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const saveProfile = async () => {
+    if (!user) return;
+    
+    setIsLoading(true);
+    
+    try {
+      let avatarUrl = formData.avatarUrl;
+      
+      // Upload new avatar if selected
+      if (avatarFile) {
+        const fileExt = avatarFile.name.split('.').pop();
+        const fileName = `${user.id}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+        
+        const { error: uploadError, data } = await supabase.storage
+          .from('avatars')
+          .upload(fileName, avatarFile);
+        
+        if (uploadError) throw uploadError;
+        
+        // Get public URL
+        const { data: publicUrlData } = supabase.storage
+          .from('avatars')
+          .getPublicUrl(fileName);
+          
+        avatarUrl = publicUrlData.publicUrl;
+      }
+      
+      // Update profile data
       const { error } = await supabase
         .from('profiles')
         .upsert({
           id: user.id,
-          first_name: data.first_name,
-          last_name: data.last_name,
-          phone: data.phone,
-          address: data.address,
-          bio: data.bio,
-          updated_at: new Date().toISOString(),
+          first_name: formData.firstName,
+          last_name: formData.lastName,
+          phone: formData.phone,
+          address: formData.address,
+          bio: formData.bio,
+          avatar_url: avatarUrl,
+          updated_at: new Date().toISOString()
         });
-        
+      
       if (error) throw error;
       
       toast({
-        title: 'Profile updated',
-        description: 'Your profile information has been saved successfully.',
+        title: t('Profile Updated'),
+        description: t('Your profile has been successfully updated.'),
       });
+      
     } catch (error) {
       console.error('Error updating profile:', error);
       toast({
-        title: 'Error',
-        description: 'Failed to update profile. Please try again.',
+        title: t('Update Failed'),
+        description: t('There was a problem updating your profile.'),
         variant: 'destructive',
       });
     } finally {
@@ -175,88 +201,42 @@ const Profile = () => {
     }
   };
 
-  // Handle profile image upload
-  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (!user || !event.target.files || event.target.files.length === 0) return;
-    
-    try {
-      setIsLoading(true);
-      const file = event.target.files[0];
-      const fileExt = file.name.split('.').pop();
-      const filePath = `${user.id}/avatar.${fileExt}`;
-      
-      // Upload image to storage
-      const { error: uploadError } = await supabase.storage
-        .from('avatars')
-        .upload(filePath, file, { upsert: true });
-        
-      if (uploadError) throw uploadError;
-      
-      // Get public URL
-      const { data: urlData } = supabase.storage
-        .from('avatars')
-        .getPublicUrl(filePath);
-      
-      const avatarUrl = urlData.publicUrl;
-      
-      // Update profile with new avatar URL
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({ avatar_url: avatarUrl })
-        .eq('id', user.id);
-        
-      if (updateError) throw updateError;
-      
-      setProfileImage(avatarUrl);
-      toast({
-        title: 'Success',
-        description: 'Profile picture updated successfully.',
-      });
-    } catch (error) {
-      console.error('Error uploading image:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to upload profile picture.',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Handle report download
-  const handleReportDownload = (reportType: 'crop' | 'disease' | 'activity') => {
+  const generateReport = async (reportType: 'crop' | 'disease' | 'all') => {
     try {
       if (reportType === 'crop') {
-        generateCropRecommendationReport(recentCropData);
+        await generateCropRecommendationReport(cropData);
+        toast({
+          title: t('Report Generated'),
+          description: t('Crop recommendation report has been downloaded.'),
+        });
       } else if (reportType === 'disease') {
-        generateDiseaseDetectionReport(recentDiseaseData);
-      } else if (reportType === 'activity') {
-        generateActivityReport(recentCropData, recentDiseaseData);
+        await generateDiseaseDetectionReport(diseaseData);
+        toast({
+          title: t('Report Generated'),
+          description: t('Disease detection report has been downloaded.'),
+        });
+      } else {
+        await generateActivityReport(cropData, diseaseData);
+        toast({
+          title: t('Report Generated'),
+          description: t('Activity report has been downloaded.'),
+        });
       }
-
-      toast({
-        title: 'Report generated',
-        description: 'Your report has been generated and downloaded.',
-      });
     } catch (error) {
       console.error('Error generating report:', error);
       toast({
-        title: 'Error',
-        description: 'Failed to generate report. Please try again.',
+        title: t('Report Generation Failed'),
+        description: t('There was a problem generating your report.'),
         variant: 'destructive',
       });
     }
   };
 
-  // Render profile info placeholder if user is loading
   if (!user) {
     return (
       <Layout>
-        <div className="container mx-auto px-4 py-8">
-          <div className="text-center py-12">
-            <p>Please log in to view your profile.</p>
-          </div>
+        <div className="container mx-auto px-4 py-12">
+          <p>{t('Please log in to view your profile.')}</p>
         </div>
       </Layout>
     );
@@ -264,289 +244,213 @@ const Profile = () => {
 
   return (
     <Layout>
-      <div className="container mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold mb-6">{t('profile')}</h1>
+      <div className="container mx-auto px-4 py-12">
+        <h1 className="text-3xl font-bold mb-8">{t('My Profile')}</h1>
         
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left Column - User Card */}
-          <Card>
-            <CardHeader className="text-center">
-              <div className="flex justify-center mb-4 relative">
-                <Avatar className="h-24 w-24">
-                  {profileImage ? (
-                    <AvatarImage src={profileImage} alt="Profile" />
-                  ) : (
-                    <AvatarFallback className="bg-primary-100 text-primary-800">
-                      <User className="h-12 w-12" />
-                    </AvatarFallback>
-                  )}
-                </Avatar>
-                <div className="absolute bottom-0 right-1/3 bg-primary-600 rounded-full p-1">
-                  <label htmlFor="avatar-upload" className="cursor-pointer">
-                    <Camera className="h-4 w-4 text-white" />
-                    <input
-                      id="avatar-upload"
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImageUpload}
-                      className="hidden"
-                    />
-                  </label>
-                </div>
-              </div>
-              <CardTitle>{form.watch('first_name')} {form.watch('last_name')}</CardTitle>
-              <CardDescription>{user.email}</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between py-1">
-                  <span className="text-muted-foreground">Member Since</span>
-                  <span>{new Date(user.created_at || '').toLocaleDateString()}</span>
-                </div>
-                <div className="flex justify-between py-1">
-                  <span className="text-muted-foreground">Email</span>
-                  <span>{user.email}</span>
-                </div>
-                <div className="flex justify-between py-1">
-                  <span className="text-muted-foreground">Phone</span>
-                  <span>{form.watch('phone') || 'Not set'}</span>
-                </div>
-              </div>
-            </CardContent>
-            <CardFooter>
-              <Button variant="outline" className="w-full" onClick={() => setActiveTab('personal')}>
-                Edit Profile
-              </Button>
-            </CardFooter>
-          </Card>
+        <Tabs defaultValue="profile" className="w-full">
+          <TabsList>
+            <TabsTrigger value="profile">{t('Profile Information')}</TabsTrigger>
+            <TabsTrigger value="activity">{t('My Activity')}</TabsTrigger>
+          </TabsList>
           
-          {/* Right Column - Tabs */}
-          <div className="lg:col-span-2">
-            <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="w-full mb-4">
-                <TabsTrigger value="personal" className="flex-1">{t('personalInfo')}</TabsTrigger>
-                <TabsTrigger value="activity" className="flex-1">Activity</TabsTrigger>
-                <TabsTrigger value="documents" className="flex-1">Documents</TabsTrigger>
-              </TabsList>
-              
-              {/* Personal Info Tab */}
-              <TabsContent value="personal">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>{t('personalInfo')}</CardTitle>
-                    <CardDescription>
-                      Update your personal information and profile details
-                    </CardDescription>
-                  </CardHeader>
-                  <form onSubmit={form.handleSubmit(onSubmit)}>
-                    <CardContent className="space-y-4">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="first_name">{t('firstName')}</Label>
-                          <Input
-                            id="first_name"
-                            {...form.register('first_name')}
-                            placeholder="John"
-                          />
-                          {form.formState.errors.first_name && (
-                            <p className="text-sm text-red-500">
-                              {form.formState.errors.first_name.message}
-                            </p>
-                          )}
+          <TabsContent value="profile" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>{t('Personal Information')}</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="flex flex-col md:flex-row gap-6">
+                  <div className="md:w-1/3 flex flex-col items-center space-y-4">
+                    <Avatar className="w-32 h-32">
+                      <AvatarImage src={previewUrl || ''} />
+                      <AvatarFallback>
+                        <UserCircle className="w-20 h-20" />
+                      </AvatarFallback>
+                    </Avatar>
+                    
+                    <div className="flex items-center gap-2">
+                      <label htmlFor="avatar-upload" className="cursor-pointer">
+                        <div className="flex items-center gap-2 bg-secondary text-secondary-foreground hover:bg-secondary/80 h-9 px-4 py-2 rounded-md text-sm font-medium">
+                          <Camera className="w-4 h-4" />
+                          {t('Change Photo')}
                         </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="last_name">{t('lastName')}</Label>
-                          <Input
-                            id="last_name"
-                            {...form.register('last_name')}
-                            placeholder="Doe"
-                          />
-                          {form.formState.errors.last_name && (
-                            <p className="text-sm text-red-500">
-                              {form.formState.errors.last_name.message}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="email">{t('email')}</Label>
-                        <Input
-                          id="email"
-                          type="email"
-                          {...form.register('email')}
-                          disabled
-                          placeholder="john.doe@example.com"
+                        <input
+                          id="avatar-upload"
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={handleAvatarChange}
                         />
-                        <p className="text-sm text-muted-foreground">
-                          Your email address cannot be changed.
-                        </p>
-                      </div>
+                      </label>
+                    </div>
+                    
+                    <div className="text-sm text-gray-500">
+                      {user.email}
+                    </div>
+                  </div>
+                  
+                  <div className="md:w-2/3 space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="phone">{t('phone')}</Label>
-                        <Input
-                          id="phone"
-                          {...form.register('phone')}
-                          placeholder="+1 (555) 000-0000"
+                        <Label htmlFor="firstName">{t('First Name')}</Label>
+                        <Input 
+                          id="firstName"
+                          name="firstName"
+                          value={formData.firstName}
+                          onChange={handleFormChange}
+                          placeholder={t('Enter your first name')}
                         />
                       </div>
+                      
                       <div className="space-y-2">
-                        <Label htmlFor="address">{t('address')}</Label>
-                        <Textarea
-                          id="address"
-                          {...form.register('address')}
-                          placeholder="123 Main St, City, Country"
+                        <Label htmlFor="lastName">{t('Last Name')}</Label>
+                        <Input 
+                          id="lastName"
+                          name="lastName"
+                          value={formData.lastName}
+                          onChange={handleFormChange}
+                          placeholder={t('Enter your last name')}
                         />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="bio">Bio</Label>
-                        <Textarea
-                          id="bio"
-                          {...form.register('bio')}
-                          placeholder="Tell us about yourself..."
-                        />
-                      </div>
-                    </CardContent>
-                    <CardFooter>
-                      <Button 
-                        type="submit" 
-                        disabled={isLoading} 
-                        className="ml-auto flex items-center gap-2"
-                      >
-                        <Save className="h-4 w-4" />
-                        {t('saveChanges')}
-                      </Button>
-                    </CardFooter>
-                  </form>
-                </Card>
-              </TabsContent>
-              
-              {/* Activity Tab */}
-              <TabsContent value="activity">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Recent Activity</CardTitle>
-                    <CardDescription>View your recent activities and services</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      <div className="border-b pb-4">
-                        <h3 className="font-medium mb-1">Crop Recommendations</h3>
-                        <p className="text-sm text-muted-foreground">
-                          You've received {recentCropData.length} crop recommendations in the last 30 days.
-                        </p>
-                        <Button variant="link" className="px-0" asChild>
-                          <a href="/crop-recommendation">Get new crop recommendations</a>
-                        </Button>
-                      </div>
-                      <div className="border-b pb-4">
-                        <h3 className="font-medium mb-1">Disease Detections</h3>
-                        <p className="text-sm text-muted-foreground">
-                          You've performed {recentDiseaseData.length} disease detections in the last 30 days.
-                        </p>
-                        <Button variant="link" className="px-0" asChild>
-                          <a href="/disease-detection">Detect crop diseases</a>
-                        </Button>
-                      </div>
-                      <div>
-                        <h3 className="font-medium mb-1">Marketplace Activity</h3>
-                        <p className="text-sm text-muted-foreground">
-                          You have {0} active listings in the marketplace.
-                        </p>
-                        <Button variant="link" className="px-0" asChild>
-                          <a href="/marketplace">Visit marketplace</a>
-                        </Button>
                       </div>
                     </div>
-                  </CardContent>
-                  <CardFooter>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="phone">{t('Phone Number')}</Label>
+                      <Input 
+                        id="phone"
+                        name="phone"
+                        value={formData.phone}
+                        onChange={handleFormChange}
+                        placeholder={t('Enter your phone number')}
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="address">{t('Address')}</Label>
+                      <Input 
+                        id="address"
+                        name="address"
+                        value={formData.address}
+                        onChange={handleFormChange}
+                        placeholder={t('Enter your address')}
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="bio">{t('Bio')}</Label>
+                      <Textarea 
+                        id="bio"
+                        name="bio"
+                        value={formData.bio}
+                        onChange={handleFormChange}
+                        placeholder={t('Tell us a little about yourself')}
+                        rows={4}
+                      />
+                    </div>
+                    
                     <Button 
-                      variant="outline" 
-                      onClick={() => handleReportDownload('activity')}
-                      className="ml-auto"
+                      onClick={saveProfile} 
+                      disabled={isLoading}
+                      className="mt-4"
                     >
-                      <FileUpIcon className="h-4 w-4 mr-2" />
-                      Download Activity Report
+                      <Save className="w-4 h-4 mr-2" />
+                      {isLoading ? t('Saving...') : t('Save Profile')}
                     </Button>
-                  </CardFooter>
-                </Card>
-              </TabsContent>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+          
+          <TabsContent value="activity" className="space-y-6">
+            <div className="flex flex-wrap gap-4 mb-6">
+              <Button variant="outline" onClick={() => generateReport('crop')}>
+                <Download className="w-4 h-4 mr-2" />
+                {t('Download Crop Recommendations')}
+              </Button>
               
-              {/* Documents Tab */}
-              <TabsContent value="documents">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Documents & Reports</CardTitle>
-                    <CardDescription>Access and download your documents and reports</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      <div className="border rounded-lg p-4">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center space-x-2">
-                            <FileUpIcon className="h-6 w-6 text-blue-500" />
-                            <div>
-                              <h3 className="font-medium">Crop Recommendations Report</h3>
-                              <p className="text-sm text-muted-foreground">
-                                Summary of all crop recommendations
-                              </p>
-                            </div>
-                          </div>
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => handleReportDownload('crop')}
-                          >
-                            Download
-                          </Button>
-                        </div>
-                      </div>
-                      <div className="border rounded-lg p-4">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center space-x-2">
-                            <FileUpIcon className="h-6 w-6 text-green-500" />
-                            <div>
-                              <h3 className="font-medium">Disease Detection History</h3>
-                              <p className="text-sm text-muted-foreground">
-                                Complete history of disease detections
-                              </p>
-                            </div>
-                          </div>
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => handleReportDownload('disease')}
-                          >
-                            Download
-                          </Button>
-                        </div>
-                      </div>
-                      <div className="border rounded-lg p-4">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center space-x-2">
-                            <FileUpIcon className="h-6 w-6 text-orange-500" />
-                            <div>
-                              <h3 className="font-medium">Farming Calendar</h3>
-                              <p className="text-sm text-muted-foreground">
-                                Personalized farming calendar based on your crops
-                              </p>
-                            </div>
-                          </div>
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => handleReportDownload('activity')}
-                          >
-                            Download
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-            </Tabs>
-          </div>
-        </div>
+              <Button variant="outline" onClick={() => generateReport('disease')}>
+                <Download className="w-4 h-4 mr-2" />
+                {t('Download Disease Detections')}
+              </Button>
+              
+              <Button variant="outline" onClick={() => generateReport('all')}>
+                <Download className="w-4 h-4 mr-2" />
+                {t('Download Complete Activity')}
+              </Button>
+            </div>
+            
+            <Card>
+              <CardHeader>
+                <CardTitle>{t('Recent Crop Recommendations')}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {cropData.length > 0 ? (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>{t('Date')}</TableHead>
+                        <TableHead>{t('Crop')}</TableHead>
+                        <TableHead>{t('Soil Type')}</TableHead>
+                        <TableHead>{t('Confidence')}</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {cropData.slice(0, 5).map((item) => (
+                        <TableRow key={item.id}>
+                          <TableCell>
+                            {new Date(item.timestamp).toLocaleDateString()}
+                          </TableCell>
+                          <TableCell>{item.recommended_crop}</TableCell>
+                          <TableCell>{item.soil_type}</TableCell>
+                          <TableCell>
+                            {item.confidence ? `${(item.confidence * 100).toFixed(0)}%` : 'N/A'}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                ) : (
+                  <p className="text-center py-4">{t('No crop recommendations found.')}</p>
+                )}
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader>
+                <CardTitle>{t('Recent Disease Detections')}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {diseaseData.length > 0 ? (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>{t('Date')}</TableHead>
+                        <TableHead>{t('Disease')}</TableHead>
+                        <TableHead>{t('Confidence')}</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {diseaseData.slice(0, 5).map((item) => (
+                        <TableRow key={item.id}>
+                          <TableCell>
+                            {new Date(item.timestamp).toLocaleDateString()}
+                          </TableCell>
+                          <TableCell>{item.disease_name}</TableCell>
+                          <TableCell>
+                            {item.confidence ? `${(item.confidence * 100).toFixed(0)}%` : 'N/A'}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                ) : (
+                  <p className="text-center py-4">{t('No disease detections found.')}</p>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
     </Layout>
   );

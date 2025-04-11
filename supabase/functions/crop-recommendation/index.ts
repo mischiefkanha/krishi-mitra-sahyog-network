@@ -14,54 +14,44 @@ serve(async (req) => {
   }
 
   try {
-    const huggingFaceApiKey = Deno.env.get('HUGGINGFACE_API_KEY');
-    if (!huggingFaceApiKey) {
-      throw new Error('HUGGINGFACE_API_KEY is not set');
+    const { soilType, nitrogen, phosphorus, potassium, ph, temperature, humidity, rainfall, location = "RegionX" } = await req.json();
+    
+    // Format the URL with query parameters
+    const apiUrl = new URL("https://magicloops.dev/api/loop/473e2be6-11eb-4b70-a1a6-34c1cbbac813/run");
+    
+    // Add query parameters
+    apiUrl.searchParams.append("soil_type", soilType);
+    apiUrl.searchParams.append("N", nitrogen.toString());
+    apiUrl.searchParams.append("P", phosphorus.toString());
+    apiUrl.searchParams.append("K", potassium.toString());
+    apiUrl.searchParams.append("pH", ph.toString());
+    apiUrl.searchParams.append("temp", temperature.toString());
+    apiUrl.searchParams.append("humidity", humidity.toString());
+    apiUrl.searchParams.append("rainfall", rainfall.toString());
+    apiUrl.searchParams.append("location", location);
+    
+    console.log(`Calling MagicLoops API: ${apiUrl.toString()}`);
+    
+    // Call the MagicLoops API
+    const response = await fetch(apiUrl.toString(), {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`API request failed with status ${response.status}`);
     }
-
-    const { soilType, nitrogen, phosphorus, potassium, ph, temperature, humidity, rainfall } = await req.json();
-    
-    // Format the input for the model
-    const promptText = `Given the following agricultural data, recommend the best crop to grow:
-    Soil Type: ${soilType}
-    Nitrogen: ${nitrogen} kg/ha
-    Phosphorus: ${phosphorus} kg/ha
-    Potassium: ${potassium} kg/ha
-    pH Value: ${ph}
-    Temperature: ${temperature} °C
-    Humidity: ${humidity} %
-    Rainfall: ${rainfall} mm
-    
-    The recommended crop is:`;
-
-    // Call the HuggingFace API with the model
-    const response = await fetch(
-      "https://api-inference.huggingface.co/models/google/flan-t5-base",
-      {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${huggingFaceApiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          inputs: promptText,
-          options: {
-            wait_for_model: true,
-          },
-        }),
-      }
-    );
 
     const result = await response.json();
     
-    // Process the result to extract recommended crop
+    // Parse the result to extract recommended crop
     let recommendedCrop = '';
     let confidence = 0.85; // Default confidence
     
-    if (Array.isArray(result)) {
-      recommendedCrop = result[0].generated_text.trim();
-    } else if (result.generated_text) {
-      recommendedCrop = result.generated_text.trim();
+    if (result.result && typeof result.result === 'string') {
+      recommendedCrop = result.result.trim();
     } else {
       console.error("Unexpected response format:", result);
       recommendedCrop = "Rice"; // Default if API fails
@@ -71,6 +61,7 @@ serve(async (req) => {
       JSON.stringify({
         recommendedCrop,
         confidence,
+        apiResponse: result, // Include the full API response for debugging
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
