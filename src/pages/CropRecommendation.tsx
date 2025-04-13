@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import Layout from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
@@ -9,7 +10,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { Loader2, ThumbsUp } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
-import { useTranslation } from '@/context/LanguageContext';
+import { useLanguage } from '@/context/LanguageContext';
 
 interface CropRecommendationResult {
   crop: string;
@@ -63,7 +64,7 @@ const CropRecommendation = () => {
   const [results, setResults] = useState<CropRecommendationResult[]>([]);
   const { toast } = useToast();
   const { user } = useAuth();
-  const { t } = useTranslation();
+  const { t } = useLanguage();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -126,14 +127,14 @@ const CropRecommendation = () => {
       setResults(newResults);
       
       toast({
-        title: t("Recommendations Ready"),
-        description: t("We've analyzed your data and prepared crop recommendations."),
+        title: t("recommendationsReady"),
+        description: t("recommendationsMessage"),
       });
     } catch (error: any) {
       console.error("Error in crop recommendation:", error);
       toast({
-        title: t("Error"),
-        description: error.message || t("Failed to get crop recommendations."),
+        title: t("error"),
+        description: error.message || t("cropRecommendationError"),
         variant: "destructive"
       });
     } finally {
@@ -146,9 +147,9 @@ const CropRecommendation = () => {
       <div className="container mx-auto px-4 py-12">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-12">
-            <h1 className="text-3xl font-bold text-gray-900 mb-4">{t("Crop Recommendation System")}</h1>
+            <h1 className="text-3xl font-bold text-gray-900 mb-4">{t("cropRecommendationSystem")}</h1>
             <p className="text-xl text-gray-600">
-              {t("Get AI-powered recommendations for the best crops to grow based on your specific soil and climate conditions.")}
+              {t("cropRecommendationDescription")}
             </p>
           </div>
           
@@ -157,28 +158,28 @@ const CropRecommendation = () => {
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <Label htmlFor="soilType">{t("Soil Type")}</Label>
+                    <Label htmlFor="soilType">{t("soilType")}</Label>
                     <Select value={soilType} onValueChange={setSoilType} required>
                       <SelectTrigger id="soilType">
-                        <SelectValue placeholder={t("Select soil type")} />
+                        <SelectValue placeholder={t("selectSoilType")} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="clay">{t("Clay")}</SelectItem>
-                        <SelectItem value="loamy">{t("Loamy")}</SelectItem>
-                        <SelectItem value="sandy">{t("Sandy")}</SelectItem>
-                        <SelectItem value="black">{t("Black")}</SelectItem>
-                        <SelectItem value="red">{t("Red")}</SelectItem>
-                        <SelectItem value="silt">{t("Silt")}</SelectItem>
+                        <SelectItem value="clay">{t("clay")}</SelectItem>
+                        <SelectItem value="loamy">{t("loamy")}</SelectItem>
+                        <SelectItem value="sandy">{t("sandy")}</SelectItem>
+                        <SelectItem value="black">{t("black")}</SelectItem>
+                        <SelectItem value="red">{t("red")}</SelectItem>
+                        <SelectItem value="silt">{t("silt")}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                   
                   <div className="space-y-2">
-                    <Label htmlFor="nitrogen">{t("Nitrogen (kg/ha)")}</Label>
+                    <Label htmlFor="nitrogen">{t("nitrogen")}</Label>
                     <Input 
                       id="nitrogen" 
                       type="number" 
-                      placeholder={t("e.g., 80")} 
+                      placeholder={t("nitrogenExample")} 
                       min="0" 
                       value={nitrogen}
                       onChange={(e) => setNitrogen(e.target.value)}
@@ -187,11 +188,11 @@ const CropRecommendation = () => {
                   </div>
                   
                   <div className="space-y-2">
-                    <Label htmlFor="phosphorus">{t("Phosphorus (kg/ha)")}</Label>
+                    <Label htmlFor="phosphorus">{t("phosphorus")}</Label>
                     <Input 
                       id="phosphorus" 
                       type="number" 
-                      placeholder={t("e.g., 45")} 
+                      placeholder={t("phosphorusExample")} 
                       min="0" 
                       value={phosphorus}
                       onChange={(e) => setPhosphorus(e.target.value)}
@@ -200,11 +201,11 @@ const CropRecommendation = () => {
                   </div>
                   
                   <div className="space-y-2">
-                    <Label htmlFor="potassium">{t("Potassium (kg/ha)")}</Label>
+                    <Label htmlFor="potassium">{t("potassium")}</Label>
                     <Input 
                       id="potassium" 
                       type="number" 
-                      placeholder={t("e.g., 60")} 
+                      placeholder={t("potassiumExample")} 
                       min="0" 
                       value={potassium}
                       onChange={(e) => setPotassium(e.target.value)}
@@ -213,11 +214,11 @@ const CropRecommendation = () => {
                   </div>
                   
                   <div className="space-y-2">
-                    <Label htmlFor="soilpH">{t("Soil pH Level")}</Label>
+                    <Label htmlFor="soilpH">{t("soilPH")}</Label>
                     <Input 
                       id="soilpH" 
                       type="number" 
-                      placeholder={t("e.g., 6.5")} 
+                      placeholder={t("soilPHExample")} 
                       min="0" 
                       max="14" 
                       step="0.1"
@@ -228,11 +229,11 @@ const CropRecommendation = () => {
                   </div>
                   
                   <div className="space-y-2">
-                    <Label htmlFor="temperature">{t("Average Temperature (°C)")}</Label>
+                    <Label htmlFor="temperature">{t("avgTemperature")}</Label>
                     <Input 
                       id="temperature" 
                       type="number" 
-                      placeholder={t("e.g., 25")} 
+                      placeholder={t("temperatureExample")} 
                       min="0" 
                       max="50"
                       value={temperature}
@@ -242,11 +243,11 @@ const CropRecommendation = () => {
                   </div>
                   
                   <div className="space-y-2">
-                    <Label htmlFor="humidity">{t("Humidity (%)")}</Label>
+                    <Label htmlFor="humidity">{t("humidity")}</Label>
                     <Input 
                       id="humidity" 
                       type="number" 
-                      placeholder={t("e.g., 60")} 
+                      placeholder={t("humidityExample")} 
                       min="0" 
                       max="100"
                       value={humidity}
@@ -256,11 +257,11 @@ const CropRecommendation = () => {
                   </div>
                   
                   <div className="space-y-2">
-                    <Label htmlFor="rainfall">{t("Annual Rainfall (mm)")}</Label>
+                    <Label htmlFor="rainfall">{t("rainfall")}</Label>
                     <Input 
                       id="rainfall" 
                       type="number" 
-                      placeholder={t("e.g., 1200")} 
+                      placeholder={t("rainfallExample")} 
                       min="0"
                       value={rainfall}
                       onChange={(e) => setRainfall(e.target.value)}
@@ -269,10 +270,10 @@ const CropRecommendation = () => {
                   </div>
                   
                   <div className="space-y-2">
-                    <Label htmlFor="location">{t("Location (District/State)")}</Label>
+                    <Label htmlFor="location">{t("location")}</Label>
                     <Input 
                       id="location" 
-                      placeholder={t("e.g., Pune, Maharashtra")} 
+                      placeholder={t("locationExample")} 
                       value={location}
                       onChange={(e) => setLocation(e.target.value)}
                       required
@@ -288,10 +289,10 @@ const CropRecommendation = () => {
                   {isLoading ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      {t("Analyzing...")}
+                      {t("analyzing")}
                     </>
                   ) : (
-                    t("Get Crop Recommendations")
+                    t("getCropRecommendations")
                   )}
                 </Button>
               </form>
@@ -300,7 +301,7 @@ const CropRecommendation = () => {
           
           {results.length > 0 && (
             <div className="mt-12">
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">{t("Recommended Crops")}</h2>
+              <h2 className="text-2xl font-bold text-gray-900 mb-6">{t("recommendedCrops")}</h2>
               <div className="space-y-6">
                 {results.map((result, index) => (
                   <Card key={index} className={`border-l-4 ${result.suitable ? 'border-l-green-500' : 'border-l-yellow-500'}`}>
@@ -327,7 +328,7 @@ const CropRecommendation = () => {
                       </div>
                       
                       <div className="mt-4">
-                        <h4 className="font-medium text-gray-900 mb-2">{t("Farming Tips")}:</h4>
+                        <h4 className="font-medium text-gray-900 mb-2">{t("farmingTips")}:</h4>
                         <ul className="list-disc pl-5 space-y-1">
                           {result.tips.map((tip, i) => (
                             <li key={i} className="text-gray-700">{tip}</li>

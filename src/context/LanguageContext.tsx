@@ -44,6 +44,7 @@ export const translations = {
     updateFailed: 'Update Failed',
     profileUpdateError: 'There was a problem updating your profile.',
     pleaseLogin: 'Please log in to view your profile.',
+    // Reports
     reportGenerated: 'Report Generated',
     cropReportDownloaded: 'Crop recommendation report has been downloaded.',
     diseaseReportDownloaded: 'Disease detection report has been downloaded.',
@@ -85,7 +86,7 @@ export const translations = {
     cropRecommendationError: "Failed to get crop recommendations.",
     cropRecommendationSystem: "Crop Recommendation System",
     cropRecommendationDescription: "Get AI-powered recommendations for the best crops to grow based on your specific soil and climate conditions.",
-    soilType: "Soil Type",
+    soilType: "Soil Type", // Already defined above, but keeping for clarity
     selectSoilType: "Select soil type",
     clay: "Clay",
     loamy: "Loamy",
@@ -154,6 +155,7 @@ export const translations = {
     updateFailed: 'अपडेट अयशस्वी',
     profileUpdateError: 'तुमचे प्रोफाइल अपडेट करण्यात समस्या आली.',
     pleaseLogin: 'कृपया तुमचे प्रोफाइल पाहण्यासाठी लॉग इन करा.',
+    // Reports
     reportGenerated: 'अहवाल तयार झाला',
     cropReportDownloaded: 'पीक शिफारस अहवाल डाउनलोड केला गेला आहे.',
     diseaseReportDownloaded: 'रोग शोध अहवाल डाउनलोड केला गेला आहे.',
@@ -195,7 +197,7 @@ export const translations = {
     cropRecommendationError: "पीक शिफारशी मिळविण्यात अयशस्वी.",
     cropRecommendationSystem: "पीक शिफारस प्रणाली",
     cropRecommendationDescription: "आपल्या विशिष्ट माती आणि हवामान परिस्थितीच्या आधारे वाढवण्यासाठी सर्वोत्तम पिकांसाठी AI-संचालित शिफारशी मिळवा.",
-    soilType: "माती प्रकार",
+    soilType: "माती प्रकार", 
     selectSoilType: "माती प्रकार निवडा",
     clay: "चिकणमाती",
     loamy: "मुरमाड",
