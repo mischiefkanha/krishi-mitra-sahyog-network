@@ -13,6 +13,8 @@ import Marketplace from "./pages/Marketplace";
 import Dashboard from "./pages/Dashboard";
 import Profile from "./pages/Profile";
 import Feedback from "./pages/Feedback";
+import Tutorials from "./pages/Tutorials";
+import Forum from "./pages/Forum";
 import NotFound from "./pages/NotFound";
 import TestBackend from "./pages/TestBackend";
 import { AuthProvider } from "./context/AuthContext";
@@ -80,6 +82,22 @@ const App = () => (
                   element={
                     <ProtectedRoute>
                       <Feedback />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/tutorials" 
+                  element={
+                    <ProtectedRoute>
+                      <Tutorials />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/forum" 
+                  element={
+                    <ProtectedRoute>
+                      <Forum />
                     </ProtectedRoute>
                   } 
                 />

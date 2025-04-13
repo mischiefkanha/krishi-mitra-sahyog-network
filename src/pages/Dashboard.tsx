@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import Layout from '@/components/layout/Layout';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,6 +12,7 @@ import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/context/LanguageContext';
 import { generateCropRecommendationReport, generateDiseaseDetectionReport, generateActivityReport } from '@/utils/pdfGenerator';
+import NearbyServices from '@/components/dashboard/NearbyServices';
 
 interface CropRecommendation {
   id: string;
@@ -345,7 +345,7 @@ const Dashboard = () => {
               </Card>
             </div>
             
-            {/* Recent Activity Tables */}
+            {/* Recent Activity Tables and Nearby Services */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <Card>
                 <CardHeader className="flex justify-between items-start">
@@ -451,6 +451,9 @@ const Dashboard = () => {
                 </CardFooter>
               </Card>
             </div>
+
+            {/* Nearby Agriculture Services */}
+            <NearbyServices />
           </TabsContent>
           
           <TabsContent value="crops" className="space-y-6">
