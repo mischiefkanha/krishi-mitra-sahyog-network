@@ -280,7 +280,7 @@ const Tutorials = () => {
                     <SelectContent>
                       {categories.map(category => (
                         <SelectItem key={category.id} value={category.id}>
-                          {t(category.label)}
+                          {t(category.label as any)}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -339,7 +339,7 @@ const Tutorials = () => {
             <TabsTrigger value="all">All</TabsTrigger>
             {categories.map(category => (
               <TabsTrigger key={category.id} value={category.id}>
-                {t(category.label)}
+                {t(category.label as any)}
               </TabsTrigger>
             ))}
           </TabsList>
