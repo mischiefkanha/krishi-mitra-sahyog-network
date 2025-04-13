@@ -1,5 +1,5 @@
 
-import { useState, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import Layout from '@/components/layout/Layout';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -230,7 +230,7 @@ const Tutorials = () => {
               <DialogHeader>
                 <DialogTitle>{t('uploadTutorial')}</DialogTitle>
                 <DialogDescription>
-                  Share your farming knowledge with the community
+                  {t('tutorialsDescription')}
                 </DialogDescription>
               </DialogHeader>
               <div className="grid gap-4 py-4">
@@ -243,7 +243,7 @@ const Tutorials = () => {
                     id="title"
                     value={uploadForm.title}
                     onChange={handleInputChange('title')} 
-                    placeholder="Enter a descriptive title"
+                    placeholder={t('tutorialTitle')}
                   />
                 </div>
                 <div className="grid gap-2">
@@ -255,7 +255,7 @@ const Tutorials = () => {
                     id="description"
                     value={uploadForm.description}
                     onChange={handleInputChange('description')} 
-                    placeholder="Explain what this tutorial is about"
+                    placeholder={t('tutorialDescription')}
                     rows={3} 
                   />
                 </div>
@@ -263,7 +263,17 @@ const Tutorials = () => {
                   <label className="text-sm font-medium">
                     {t('tutorialCategory')}
                   </label>
-                  <Select value={uploadForm.category} onValueChange={handleCategoryChange}>
+                  <Select 
+                    value={uploadForm.category} 
+                    onValueChange={(value: string) => {
+                      // Ensure the value is one of the predefined categories
+                      const validCategories = categories.map(cat => cat.id);
+                      setUploadForm({
+                        ...uploadForm,
+                        category: validCategories.includes(value) ? value : ''
+                      });
+                    }}
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder={t('category')} />
                     </SelectTrigger>
