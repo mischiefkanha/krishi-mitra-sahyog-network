@@ -265,7 +265,7 @@ const Tutorials = () => {
                   </label>
                   <Select value={uploadForm.category} onValueChange={handleCategoryChange}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select a category" />
+                      <SelectValue placeholder={t('category')} />
                     </SelectTrigger>
                     <SelectContent>
                       {categories.map(category => (
@@ -295,7 +295,7 @@ const Tutorials = () => {
                       className="w-full"
                     >
                       <Video className="h-4 w-4 mr-2" />
-                      {uploadForm.video ? uploadForm.video.name : 'Select video file'}
+                      {uploadForm.video ? uploadForm.video.name : t('tutorialVideo')}
                     </Button>
                   </div>
                 </div>
