@@ -1,7 +1,7 @@
 
 import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, LayoutDashboard, Sprout, Bug, ShoppingBag, User, MessageSquare, LogOut, Moon, Sun, Languages } from 'lucide-react';
+import { Home, LayoutDashboard, Sprout, Bug, ShoppingBag, User, MessageSquare, LogOut, Moon, Sun, Languages, Video } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
@@ -28,6 +28,7 @@ const Sidebar = () => {
     { icon: Sprout, label: t('cropRecommendation'), path: '/crop-recommendation', requiresAuth: true },
     { icon: Bug, label: t('diseaseDetection'), path: '/disease-detection', requiresAuth: true },
     { icon: ShoppingBag, label: t('marketplace'), path: '/marketplace', requiresAuth: true },
+    { icon: Video, label: t('tutorials'), path: '/tutorials', requiresAuth: true },
     { icon: User, label: t('profile'), path: '/profile', requiresAuth: true },
     { icon: MessageSquare, label: t('feedback'), path: '/feedback', requiresAuth: true },
   ];
