@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
@@ -10,7 +11,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -98,12 +99,23 @@ const Navbar = () => {
               <div className="flex items-center space-x-4">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="outline" className="flex items-center gap-2">
+                    <Button variant="outline" className="flex items-center gap-2 bg-primary-50 dark:bg-primary-900/20 border-primary-200 dark:border-primary-700">
                       <User size={18} />
                       <span>Profile</span>
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
+                  <DropdownMenuContent align="end" className="w-56">
+                    <div className="flex items-center justify-start p-2 border-b border-border">
+                      <div className="flex items-center space-x-2">
+                        <div className="w-10 h-10 rounded-full bg-primary-100 dark:bg-primary-900 flex items-center justify-center text-primary-700 dark:text-primary-300">
+                          {user.email && user.email.charAt(0).toUpperCase()}
+                        </div>
+                        <div className="flex flex-col">
+                          <p className="text-sm font-medium">{user.email}</p>
+                          <p className="text-xs text-muted-foreground">Farmer</p>
+                        </div>
+                      </div>
+                    </div>
                     <Link to="/profile">
                       <DropdownMenuItem>
                         <User className="mr-2 h-4 w-4" />
@@ -122,7 +134,11 @@ const Navbar = () => {
                         <span>Settings</span>
                       </DropdownMenuItem>
                     </Link>
-                    <DropdownMenuItem onClick={() => signOut()}>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem 
+                      onClick={() => signOut()}
+                      className="text-red-500 focus:text-red-500 dark:text-red-400 dark:focus:text-red-400"
+                    >
                       <LogOut className="mr-2 h-4 w-4" />
                       <span>Sign Out</span>
                     </DropdownMenuItem>
@@ -130,7 +146,7 @@ const Navbar = () => {
                 </DropdownMenu>
               </div>
             ) : (
-              <>
+              <div className="flex items-center space-x-3">
                 <Link to="/login">
                   <Button variant="outline" className="flex items-center gap-2">
                     <LogIn size={18} />
@@ -138,9 +154,11 @@ const Navbar = () => {
                   </Button>
                 </Link>
                 <Link to="/register">
-                  <Button className="bg-primary-600 hover:bg-primary-700 dark:bg-primary-500 dark:hover:bg-primary-600">Register</Button>
+                  <Button className="bg-primary-600 hover:bg-primary-700 dark:bg-primary-500 dark:hover:bg-primary-600">
+                    Register
+                  </Button>
                 </Link>
-              </>
+              </div>
             )}
           </div>
           
@@ -156,6 +174,7 @@ const Navbar = () => {
           </div>
         </div>
         
+        {/* Mobile menu */}
         {isMenuOpen && (
           <div className="md:hidden mt-4 pb-4">
             <div className="flex flex-col space-y-4">
@@ -199,27 +218,32 @@ const Navbar = () => {
                 </>
               )}
               
-              <div className="flex items-center space-x-4 py-2">
-                <Button 
-                  variant="ghost" 
-                  size="icon"
-                  onClick={toggleTheme}
-                  className="rounded-full"
-                >
-                  {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-                </Button>
-                
-                <Button 
-                  variant="ghost" 
-                  size="icon"
-                  onClick={toggleLanguage}
-                  className="rounded-full"
-                >
-                  <Globe className="h-5 w-5" />
-                </Button>
+              <div className="flex items-center justify-between space-x-4 py-2 border-t border-gray-200 dark:border-gray-700">
+                <span className="text-gray-700 dark:text-gray-300">
+                  {theme === 'dark' ? 'Dark Mode' : 'Light Mode'}
+                </span>
+                <div className="flex items-center space-x-4">
+                  <Button 
+                    variant="ghost" 
+                    size="icon"
+                    onClick={toggleTheme}
+                    className="rounded-full"
+                  >
+                    {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+                  </Button>
+                  
+                  <Button 
+                    variant="ghost" 
+                    size="icon"
+                    onClick={toggleLanguage}
+                    className="rounded-full"
+                  >
+                    <Globe className="h-5 w-5" />
+                  </Button>
+                </div>
               </div>
               
-              <div className="flex space-x-4 pt-2">
+              <div className="flex space-x-4 pt-2 border-t border-gray-200 dark:border-gray-700">
                 {user ? (
                   <>
                     <Link to="/profile" onClick={() => setIsMenuOpen(false)} className="w-1/2">
