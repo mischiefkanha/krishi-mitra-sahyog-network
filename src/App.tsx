@@ -17,6 +17,10 @@ import Tutorials from "./pages/Tutorials";
 import Forum from "./pages/Forum";
 import NotFound from "./pages/NotFound";
 import TestBackend from "./pages/TestBackend";
+import WeatherAlerts from "./pages/WeatherAlerts";
+import CropCalendar from "./pages/CropCalendar";
+import AskExpert from "./pages/AskExpert";
+import MarketRates from "./pages/MarketRates";
 import { AuthProvider } from "./context/AuthContext";
 import { ThemeProvider } from "./context/ThemeContext";
 import { LanguageProvider } from "./context/LanguageContext";
@@ -98,6 +102,39 @@ const App = () => (
                   element={
                     <ProtectedRoute>
                       <Forum />
+                    </ProtectedRoute>
+                  } 
+                />
+                {/* New Routes */}
+                <Route 
+                  path="/weather-alerts" 
+                  element={
+                    <ProtectedRoute>
+                      <WeatherAlerts />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/crop-calendar" 
+                  element={
+                    <ProtectedRoute>
+                      <CropCalendar />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/ask-expert" 
+                  element={
+                    <ProtectedRoute>
+                      <AskExpert />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/market-rates" 
+                  element={
+                    <ProtectedRoute>
+                      <MarketRates />
                     </ProtectedRoute>
                   } 
                 />
