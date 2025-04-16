@@ -26,6 +26,13 @@ import { ThemeProvider } from "./context/ThemeContext";
 import { LanguageProvider } from "./context/LanguageContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 
+// Importing placeholder pages for new navigation items
+import VoiceAssistant from "./pages/VoiceAssistant";
+import SuccessStories from "./pages/SuccessStories";
+import News from "./pages/News";
+import ReferAndEarn from "./pages/ReferAndEarn";
+import Settings from "./pages/Settings";
+
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -135,6 +142,47 @@ const App = () => (
                   element={
                     <ProtectedRoute>
                       <MarketRates />
+                    </ProtectedRoute>
+                  } 
+                />
+                {/* New Routes */}
+                <Route 
+                  path="/voice-assistant" 
+                  element={
+                    <ProtectedRoute>
+                      <VoiceAssistant />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/success-stories" 
+                  element={
+                    <ProtectedRoute>
+                      <SuccessStories />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/news" 
+                  element={
+                    <ProtectedRoute>
+                      <News />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/refer" 
+                  element={
+                    <ProtectedRoute>
+                      <ReferAndEarn />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/settings" 
+                  element={
+                    <ProtectedRoute>
+                      <Settings />
                     </ProtectedRoute>
                   } 
                 />
