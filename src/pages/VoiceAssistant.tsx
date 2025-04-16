@@ -1,4 +1,3 @@
-
 import { useTranslation } from "@/context/LanguageContext";
 import { useTheme } from "@/context/ThemeContext";
 import Layout from "@/components/layout/Layout";
@@ -208,23 +207,25 @@ const VoiceAssistantPage = () => {
         </div>
       </div>
       
-      <style jsx global>{`
-        @keyframes pulsate {
-          0% {
-            box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.7);
+      <style>
+        {`
+          @keyframes pulsate {
+            0% {
+              box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.7);
+            }
+            70% {
+              box-shadow: 0 0 0 10px rgba(76, 175, 80, 0);
+            }
+            100% {
+              box-shadow: 0 0 0 0 rgba(76, 175, 80, 0);
+            }
           }
-          70% {
-            box-shadow: 0 0 0 10px rgba(76, 175, 80, 0);
+          
+          .pulsate {
+            animation: pulsate 1.5s infinite;
           }
-          100% {
-            box-shadow: 0 0 0 0 rgba(76, 175, 80, 0);
-          }
-        }
-        
-        .pulsate {
-          animation: pulsate 1.5s infinite;
-        }
-      `}</style>
+        `}
+      </style>
     </Layout>
   );
 };

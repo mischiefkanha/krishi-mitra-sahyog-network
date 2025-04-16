@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
@@ -9,7 +8,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
-import { useTranslation } from '@/context/LanguageContext';
+import { useLanguage } from '@/context/LanguageContext';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
@@ -17,8 +16,12 @@ const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { user, signOut } = useAuth();
   const { theme, toggleTheme } = useTheme();
-  const { language, toggleLanguage } = useTranslation();
+  const { language, setLanguage } = useLanguage();
   const location = useLocation();
+
+  const toggleLanguage = () => {
+    setLanguage(language === 'en' ? 'mr' : 'en');
+  };
 
   return (
     <nav className="bg-white dark:bg-gray-800 shadow-md py-4 sticky top-0 z-50">
@@ -32,7 +35,6 @@ const Navbar = () => {
             </span>
           </Link>
           
-          {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-8">
             <Link to="/" className={`text-gray-700 dark:text-gray-200 hover:text-primary-700 dark:hover:text-primary-400 font-medium transition-colors ${location.pathname === '/' ? 'text-primary-700 dark:text-primary-400' : ''}`}>
               Home
@@ -142,7 +144,6 @@ const Navbar = () => {
             )}
           </div>
           
-          {/* Mobile menu button */}
           <div className="md:hidden flex items-center">
             <Button 
               variant="ghost"
@@ -155,7 +156,6 @@ const Navbar = () => {
           </div>
         </div>
         
-        {/* Mobile Navigation */}
         {isMenuOpen && (
           <div className="md:hidden mt-4 pb-4">
             <div className="flex flex-col space-y-4">
