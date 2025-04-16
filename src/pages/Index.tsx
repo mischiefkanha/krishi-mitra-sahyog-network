@@ -3,6 +3,7 @@ import { ArrowRight, Leaf, Shield, ShoppingBag, MessageCircle } from 'lucide-rea
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import Layout from '@/components/layout/Layout';
+import LatestNewsAndSchemes from '@/components/home/LatestNewsAndSchemes';
 
 const Index = () => {
   return (
@@ -41,6 +42,9 @@ const Index = () => {
           </div>
         </div>
       </section>
+
+      {/* Latest Agricultural News & Schemes Section */}
+      <LatestNewsAndSchemes />
 
       {/* Features Section */}
       <section className="py-16 bg-white">
