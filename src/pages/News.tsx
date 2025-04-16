@@ -81,7 +81,7 @@ const NewsPage = () => {
 
               <Card>
                 <CardHeader>
-                  <CardTitle>{language === 'en' ? 'New Initiative to Support Farmers' Market Access' : 'शेतकऱ्यांच्या बाजारपेठ प्रवेशास समर्थन देण्यासाठी नवीन पुढाकार'}</CardTitle>
+                  <CardTitle>{language === 'en' ? "New Initiative to Support Farmers' Market Access" : 'शेतकऱ्यांच्या बाजारपेठ प्रवेशास समर्थन देण्यासाठी नवीन पुढाकार'}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm text-gray-500 mb-2">
