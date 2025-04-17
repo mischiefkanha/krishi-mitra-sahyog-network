@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect } from 'react';
 import Layout from '@/components/layout/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -20,6 +21,9 @@ interface ChatMessage {
   timestamp: Date;
 }
 
+// Define type for language code to match the LanguageContext
+type LanguageCode = 'en' | 'mr' | 'hi';
+
 const AskExpert = () => {
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
@@ -32,7 +36,7 @@ const AskExpert = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
-  const [preferredLanguage, setPreferredLanguage] = useState<'en' | 'mr' | 'hi'>('mr'); // Specify as LanguageCode type
+  const [preferredLanguage, setPreferredLanguage] = useState<LanguageCode>('mr');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const { language, setLanguage } = useLanguage();
@@ -196,6 +200,14 @@ const AskExpert = () => {
     });
   };
 
+  // Create a type-safe handler for the Select component
+  const handleLanguageChange = (value: string) => {
+    // Validate that the value is a valid LanguageCode before setting it
+    if (value === 'en' || value === 'mr' || value === 'hi') {
+      setPreferredLanguage(value);
+    }
+  };
+
   return (
     <Layout>
       <div className="container mx-auto px-4 py-8">
@@ -221,7 +233,7 @@ const AskExpert = () => {
                 />
                 <Label htmlFor="voice-responses">Auto-read responses</Label>
               </div>
-              <Select value={preferredLanguage} onValueChange={setPreferredLanguage}>
+              <Select onValueChange={handleLanguageChange} value={preferredLanguage}>
                 <SelectTrigger className="w-[180px]">
                   <SelectValue placeholder="Select Language" />
                 </SelectTrigger>
