@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import ResetPassword from "./pages/ResetPassword";
 import CropRecommendation from "./pages/CropRecommendation";
 import DiseaseDetection from "./pages/DiseaseDetection";
 import Marketplace from "./pages/Marketplace";
@@ -48,6 +49,7 @@ const App = () => (
                 <Route path="/" element={<Index />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
+                <Route path="/reset-password" element={<ResetPassword />} />
                 <Route 
                   path="/crop-recommendation" 
                   element={
@@ -145,7 +147,6 @@ const App = () => (
                     </ProtectedRoute>
                   } 
                 />
-                {/* New Routes */}
                 <Route 
                   path="/voice-assistant" 
                   element={
@@ -165,9 +166,7 @@ const App = () => (
                 <Route 
                   path="/news" 
                   element={
-                    <ProtectedRoute>
-                      <News />
-                    </ProtectedRoute>
+                    <News />
                   } 
                 />
                 <Route 

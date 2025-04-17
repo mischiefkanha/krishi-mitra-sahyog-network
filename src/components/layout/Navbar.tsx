@@ -4,7 +4,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { 
   Menu, X, User, LayoutDashboard, 
   LogOut, Sun, Moon, Settings,
-  LogIn, Globe
+  LogIn, Globe, Newspaper, MessageSquare
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
@@ -15,7 +15,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const { user, signOut } = useAuth();
+  const { user, profile, signOut } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const { language, setLanguage } = useLanguage();
   const location = useLocation();
@@ -40,6 +40,15 @@ const Navbar = () => {
             <Link to="/" className={`text-gray-700 dark:text-gray-200 hover:text-primary-700 dark:hover:text-primary-400 font-medium transition-colors ${location.pathname === '/' ? 'text-primary-700 dark:text-primary-400' : ''}`}>
               Home
             </Link>
+
+            <Link to="/news" className={`text-gray-700 dark:text-gray-200 hover:text-primary-700 dark:hover:text-primary-400 font-medium transition-colors ${location.pathname === '/news' ? 'text-primary-700 dark:text-primary-400' : ''}`}>
+              News
+            </Link>
+
+            <Link to="/forum" className={`text-gray-700 dark:text-gray-200 hover:text-primary-700 dark:hover:text-primary-400 font-medium transition-colors ${location.pathname === '/forum' ? 'text-primary-700 dark:text-primary-400' : ''}`}>
+              Community
+            </Link>
+            
             {user && (
               <>
                 <Link to="/dashboard" className={`text-gray-700 dark:text-gray-200 hover:text-primary-700 dark:hover:text-primary-400 font-medium transition-colors ${location.pathname === '/dashboard' ? 'text-primary-700 dark:text-primary-400' : ''}`}>
@@ -100,19 +109,29 @@ const Navbar = () => {
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="outline" className="flex items-center gap-2 bg-primary-50 dark:bg-primary-900/20 border-primary-200 dark:border-primary-700">
-                      <User size={18} />
-                      <span>Profile</span>
+                      <div className="w-6 h-6 rounded-full bg-primary-100 dark:bg-primary-900 flex items-center justify-center text-primary-700 dark:text-primary-300 overflow-hidden">
+                        {profile?.avatar_url ? (
+                          <img src={profile.avatar_url} alt="Profile" className="w-full h-full object-cover" />
+                        ) : (
+                          profile?.first_name ? profile.first_name[0].toUpperCase() : user.email?.[0].toUpperCase()
+                        )}
+                      </div>
+                      <span>{profile?.first_name || 'Profile'}</span>
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-56">
                     <div className="flex items-center justify-start p-2 border-b border-border">
                       <div className="flex items-center space-x-2">
-                        <div className="w-10 h-10 rounded-full bg-primary-100 dark:bg-primary-900 flex items-center justify-center text-primary-700 dark:text-primary-300">
-                          {user.email && user.email.charAt(0).toUpperCase()}
+                        <div className="w-10 h-10 rounded-full bg-primary-100 dark:bg-primary-900 flex items-center justify-center text-primary-700 dark:text-primary-300 overflow-hidden">
+                          {profile?.avatar_url ? (
+                            <img src={profile.avatar_url} alt="Profile" className="w-full h-full object-cover" />
+                          ) : (
+                            profile?.first_name ? profile.first_name[0].toUpperCase() : user.email?.[0].toUpperCase()
+                          )}
                         </div>
                         <div className="flex flex-col">
-                          <p className="text-sm font-medium">{user.email}</p>
-                          <p className="text-xs text-muted-foreground">Farmer</p>
+                          <p className="text-sm font-medium">{profile?.first_name ? `${profile.first_name} ${profile.last_name || ''}` : user.email}</p>
+                          <p className="text-xs text-muted-foreground">{profile?.role || 'Farmer'}</p>
                         </div>
                       </div>
                     </div>
@@ -185,6 +204,25 @@ const Navbar = () => {
               >
                 Home
               </Link>
+
+              <Link 
+                to="/news" 
+                className={`text-gray-700 dark:text-gray-200 hover:text-primary-700 dark:hover:text-primary-400 font-medium py-2 ${location.pathname === '/news' ? 'text-primary-700 dark:text-primary-400' : ''}`}
+                onClick={() => setIsMenuOpen(false)}
+              >
+                <Newspaper className="inline-block mr-2 h-4 w-4" />
+                News
+              </Link>
+
+              <Link 
+                to="/forum" 
+                className={`text-gray-700 dark:text-gray-200 hover:text-primary-700 dark:hover:text-primary-400 font-medium py-2 ${location.pathname === '/forum' ? 'text-primary-700 dark:text-primary-400' : ''}`}
+                onClick={() => setIsMenuOpen(false)}
+              >
+                <MessageSquare className="inline-block mr-2 h-4 w-4" />
+                Community
+              </Link>
+              
               {user && (
                 <>
                   <Link 
