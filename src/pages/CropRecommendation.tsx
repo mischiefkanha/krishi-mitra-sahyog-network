@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import Layout from '@/components/layout/Layout';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,7 +6,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
-import { Loader2, MicIcon, Plant, Download } from 'lucide-react';
+import { Loader2, MicIcon, Download } from 'lucide-react';
+import { Leaf } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
@@ -39,9 +39,8 @@ const CropRecommendation = () => {
   const [activeVoiceField, setActiveVoiceField] = useState<string | null>(null);
   const { toast } = useToast();
   const { user } = useAuth();
-  const { t, language } = useLanguage();
+  const { t, language: preferredLanguage } = useLanguage();
   
-  // Speech recognition for voice input
   const startListening = (field: string) => {
     if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
       toast({
@@ -55,12 +54,11 @@ const CropRecommendation = () => {
     setActiveVoiceField(field);
     setIsListening(true);
 
-    // @ts-ignore
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     const recognition = new SpeechRecognition();
-    recognition.lang = language === 'en' ? 'en-US' : language === 'hi' ? 'hi-IN' : 'mr-IN';
+    recognition.lang = preferredLanguage === 'en' ? 'en-US' : 
+                       preferredLanguage === 'hi' ? 'hi-IN' : 'mr-IN';
     recognition.interimResults = false;
-    recognition.maxAlternatives = 1;
 
     recognition.start();
 
@@ -98,7 +96,6 @@ const CropRecommendation = () => {
           description: `Value set to ${numValue}`,
         });
       } else if (field === 'soilType') {
-        // Try to find matching soil type
         const lowercaseTranscript = transcript.toLowerCase();
         const matchedSoil = soilTypes.find(soil => 
           lowercaseTranscript.includes(soil.toLowerCase())
@@ -154,7 +151,6 @@ const CropRecommendation = () => {
     setLoading(true);
     
     try {
-      // Call the crop recommendation function
       const { data, error } = await supabase.functions.invoke('crop-recommendation', {
         body: {
           soilType,
@@ -172,7 +168,6 @@ const CropRecommendation = () => {
       
       setResult(data);
       
-      // Save to database if user is logged in
       if (user) {
         await supabase.from('crop_recommendations').insert({
           user_id: user.id,
@@ -593,7 +588,7 @@ const CropRecommendation = () => {
                   <div className="space-y-4">
                     <div className="flex items-center justify-center">
                       <div className="bg-primary-50 dark:bg-primary-900/20 w-32 h-32 rounded-full flex items-center justify-center mb-4">
-                        <Plant className="h-16 w-16 text-primary-600 dark:text-primary-400" />
+                        <Leaf className="h-16 w-16 text-primary-600 dark:text-primary-400" />
                       </div>
                     </div>
                     

@@ -1,5 +1,5 @@
 
-import { useTranslation } from "@/context/LanguageContext";
+import { useLanguage } from "@/context/LanguageContext";
 import { useTheme } from "@/context/ThemeContext";
 import Layout from "@/components/layout/Layout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -10,7 +10,8 @@ import { Label } from "@/components/ui/label";
 import { Moon, Sun, Bell, Smartphone, Wifi, WifiOff } from "lucide-react";
 
 const SettingsPage = () => {
-  const { language, setLanguage } = useTranslation();
+  // Use useLanguage instead of useTranslation to get both language and setLanguage
+  const { language, setLanguage } = useLanguage();
   const { theme, toggleTheme } = useTheme();
 
   return (

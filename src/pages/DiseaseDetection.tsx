@@ -1,4 +1,3 @@
-
 import { useState, useRef } from 'react';
 import Layout from '@/components/layout/Layout';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -66,7 +65,6 @@ const DiseaseDetection = () => {
   };
 
   const captureImage = () => {
-    // Check if camera API is supported
     if (!('mediaDevices' in navigator) || !('getUserMedia' in navigator.mediaDevices)) {
       toast({
         title: "Camera Not Supported",
@@ -76,15 +74,12 @@ const DiseaseDetection = () => {
       return;
     }
     
-    // Create temporary video and canvas elements
     const video = document.createElement('video');
     const canvas = document.createElement('canvas');
     const context = canvas.getContext('2d');
     
-    // Get user media (camera)
     navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
       .then(stream => {
-        // Show a preview modal
         const modal = document.createElement('div');
         modal.style.position = 'fixed';
         modal.style.top = '0';
@@ -101,7 +96,7 @@ const DiseaseDetection = () => {
         video.srcObject = stream;
         video.style.maxWidth = '100%';
         video.style.maxHeight = '70vh';
-        video.style.transform = 'scaleX(-1)'; // Mirror view
+        video.style.transform = 'scaleX(-1)';
         video.play();
         
         const buttonContainer = document.createElement('div');
@@ -135,29 +130,24 @@ const DiseaseDetection = () => {
         document.body.appendChild(modal);
         
         const cleanup = () => {
-          // Stop video and remove modal
           const tracks = stream.getTracks();
           tracks.forEach(track => track.stop());
           document.body.removeChild(modal);
         };
         
         captureBtn.onclick = () => {
-          // Set canvas dimensions to match video
           canvas.width = video.videoWidth;
           canvas.height = video.videoHeight;
           
-          // Draw current video frame to canvas
           if (context) {
             context.drawImage(video, 0, 0, canvas.width, canvas.height);
           }
           
-          // Convert canvas to data URL
           const imageDataUrl = canvas.toDataURL('image/jpeg');
           setSelectedImage(imageDataUrl);
           
           cleanup();
           
-          // Process the captured image
           canvas.toBlob((blob) => {
             if (blob) {
               const file = new File([blob], "captured-image.jpg", { type: "image/jpeg" });
@@ -194,7 +184,6 @@ const DiseaseDetection = () => {
     };
     reader.readAsDataURL(file);
     
-    // Now detect plant disease
     detectDisease(file);
   };
 
@@ -203,10 +192,8 @@ const DiseaseDetection = () => {
     setResult(null);
     
     try {
-      // Convert file to base64
       const base64Image = await fileToBase64(file);
       
-      // Call the disease detection function
       const { data, error } = await supabase.functions.invoke('disease-detection', {
         body: { imageBase64: base64Image }
       });
@@ -215,13 +202,12 @@ const DiseaseDetection = () => {
       
       setResult(data);
       
-      // Save to database if user is logged in
       if (user) {
         await supabase.from('disease_detections').insert({
           user_id: user.id,
           disease_name: data.diseaseName,
           confidence: data.confidence,
-          severity: data.severity
+          image_path: file.name
         });
       }
       
@@ -243,7 +229,6 @@ const DiseaseDetection = () => {
     }
   };
 
-  // Utility function to convert File to base64
   const fileToBase64 = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();

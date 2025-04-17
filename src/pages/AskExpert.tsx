@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from 'react';
 import Layout from '@/components/layout/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { useLanguage } from '@/context/LanguageContext';
+import { useLanguage, useTranslation } from '@/context/LanguageContext';
 import { Send, Mic, User2, Bot, Loader2, Copy, VolumeX, Volume2 } from 'lucide-react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Switch } from '@/components/ui/switch';
@@ -33,7 +32,7 @@ const AskExpert = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
-  const [preferredLanguage, setPreferredLanguage] = useState('mr'); // Default to Marathi
+  const [preferredLanguage, setPreferredLanguage] = useState<'en' | 'mr' | 'hi'>('mr'); // Specify as LanguageCode type
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const { language, setLanguage } = useLanguage();
@@ -129,8 +128,7 @@ const AskExpert = () => {
                        preferredLanguage === 'hi' ? 'hi-IN' : 'mr-IN';
     
     recognition.interimResults = false;
-    recognition.maxAlternatives = 1;
-
+    
     recognition.start();
 
     recognition.onresult = (event: any) => {
