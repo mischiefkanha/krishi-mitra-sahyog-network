@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import Layout from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
@@ -71,9 +70,9 @@ interface ForumPost {
   downvotes: number;
   comment_count: number;
   author: {
-    first_name: string;
-    last_name: string;
-    avatar_url: string;
+    first_name: string | null;
+    last_name: string | null;
+    avatar_url: string | null;
   };
 }
 
@@ -84,10 +83,18 @@ interface Comment {
   post_id: string;
   created_at: string;
   author: {
-    first_name: string;
-    last_name: string;
-    avatar_url: string;
+    first_name: string | null;
+    last_name: string | null;
+    avatar_url: string | null;
   };
+}
+
+interface ForumVote {
+  id: string;
+  user_id: string;
+  post_id: string;
+  vote_type: 'up' | 'down';
+  created_at: string;
 }
 
 const forumCategories = [
@@ -187,7 +194,7 @@ const Forum = () => {
       if (error) throw error;
       
       if (data) {
-        setPosts(data as ForumPost[]);
+        setPosts(data as unknown as ForumPost[]);
       }
     } catch (error) {
       console.error('Error fetching posts:', error);
@@ -216,7 +223,7 @@ const Forum = () => {
       if (error) throw error;
       
       if (data) {
-        setComments(data as Comment[]);
+        setComments(data as unknown as Comment[]);
       }
     } catch (error) {
       console.error('Error fetching comments:', error);
@@ -252,7 +259,7 @@ const Forum = () => {
           content: data.content,
           category: data.category,
           user_id: user.id,
-        });
+        } as any);
       
       if (error) throw error;
       
@@ -282,7 +289,7 @@ const Forum = () => {
           content: data.content,
           user_id: user.id,
           post_id: selectedPost.id,
-        });
+        } as any);
       
       if (error) throw error;
       
@@ -393,7 +400,7 @@ const Forum = () => {
             user_id: user.id,
             post_id: postId,
             vote_type: voteType,
-          });
+          } as any);
         
         if (voteType === 'up') {
           newUpvotes += 1;
@@ -468,7 +475,7 @@ const Forum = () => {
     post.content.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const getInitials = (firstName?: string, lastName?: string) => {
+  const getInitials = (firstName?: string | null, lastName?: string | null) => {
     if (!firstName && !lastName) return 'U';
     return `${firstName?.[0] || ''}${lastName?.[0] || ''}`.toUpperCase();
   };
@@ -665,7 +672,7 @@ const Forum = () => {
                             <div className="flex items-center space-x-4 text-sm text-gray-600 dark:text-gray-400">
                               <div className="flex items-center">
                                 <Avatar className="h-6 w-6 mr-2">
-                                  <AvatarImage src={post.author?.avatar_url} />
+                                  <AvatarImage src={post.author?.avatar_url || undefined} />
                                   <AvatarFallback>
                                     {getInitials(post.author?.first_name, post.author?.last_name)}
                                   </AvatarFallback>
@@ -773,7 +780,7 @@ const Forum = () => {
               <div className="border-b border-gray-200 dark:border-gray-700 py-4">
                 <div className="flex items-start">
                   <Avatar className="h-10 w-10 mr-4">
-                    <AvatarImage src={selectedPost.author?.avatar_url} />
+                    <AvatarImage src={selectedPost.author?.avatar_url || undefined} />
                     <AvatarFallback>
                       {getInitials(selectedPost.author?.first_name, selectedPost.author?.last_name)}
                     </AvatarFallback>
@@ -844,7 +851,7 @@ const Forum = () => {
                       <div key={comment.id} className="border-t pt-4 first:border-0 first:pt-0">
                         <div className="flex items-start">
                           <Avatar className="h-8 w-8 mr-3">
-                            <AvatarImage src={comment.author?.avatar_url} />
+                            <AvatarImage src={comment.author?.avatar_url || undefined} />
                             <AvatarFallback>
                               {getInitials(comment.author?.first_name, comment.author?.last_name)}
                             </AvatarFallback>
