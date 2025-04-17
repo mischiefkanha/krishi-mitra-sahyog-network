@@ -1,324 +1,291 @@
 
-import { useState, useEffect, useRef } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useEffect, useState } from 'react';
+import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
+import { MapPinIcon, Phone, Globe, Clock, ArrowUpRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useToast } from '@/components/ui/use-toast';
-import { MapPin, Navigation, Phone, Store, AlertTriangle } from 'lucide-react';
-import { Skeleton } from '@/components/ui/skeleton';
+import { Badge } from '@/components/ui/badge';
 import { useLanguage } from '@/context/LanguageContext';
-import 'leaflet/dist/leaflet.css';
 
-// We need to import Leaflet dynamically for SSR compatibility
-interface Location {
+interface Service {
+  id: string;
   name: string;
-  lat: number;
-  lng: number;
-  type: 'fertilizer' | 'pesticide' | 'seed' | 'equipment';
-  address?: string;
-  contact?: string;
-  distance?: number;
+  type: 'fertilizer' | 'pesticide' | 'equipment' | 'seeds';
+  distance: number;
+  address: string;
+  phone?: string;
+  website?: string;
+  hours?: string;
+  rating: number;
+  verified: boolean;
 }
 
 const NearbyServices = () => {
-  const [isLoading, setIsLoading] = useState(true);
-  const [services, setServices] = useState<Location[]>([]);
-  const [userLocation, setUserLocation] = useState<{lat: number; lng: number} | null>(null);
-  const [locationError, setLocationError] = useState<string | null>(null);
-  const [map, setMap] = useState<any>(null);
-  const { toast } = useToast();
+  const [services, setServices] = useState<Service[]>([]);
+  const [location, setLocation] = useState<GeolocationPosition | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const { t } = useLanguage();
-  const mapContainerRef = useRef<HTMLDivElement>(null);
-
-  // Initialize map
+  
   useEffect(() => {
-    if (!mapContainerRef.current || map) return;
-    
-    const initMap = async () => {
-      try {
-        // Dynamically import Leaflet
-        const L = await import('leaflet');
-        
-        // Create the map instance
-        const mapInstance = L.map(mapContainerRef.current).setView([20.5937, 78.9629], 5); // Center of India
-        
-        // Add OpenStreetMap tiles
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        }).addTo(mapInstance);
-        
-        setMap(mapInstance);
-        
-        // Try to get user location
-        getUserLocation();
-      } catch (error) {
-        console.error('Error initializing map:', error);
-        toast({
-          title: "Map Error",
-          description: "Failed to load the map. Please try again later.",
-          variant: "destructive"
-        });
-      }
-    };
-    
-    initMap();
-    
-    // Cleanup function
-    return () => {
-      if (map) map.remove();
-    };
-  }, [mapContainerRef]);
-
-  // Get user location and nearby services
-  const getUserLocation = () => {
-    setIsLoading(true);
-    
-    if (!navigator.geolocation) {
-      setLocationError("Geolocation is not supported by your browser");
-      setIsLoading(false);
-      return;
-    }
-    
-    navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        const { latitude, longitude } = position.coords;
-        setUserLocation({ lat: latitude, lng: longitude });
-        
-        if (map) {
-          map.setView([latitude, longitude], 12);
+    // Get user's location if available
+    if ('geolocation' in navigator) {
+      setLoading(true);
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setLocation(position);
+          setLoading(false);
+        },
+        (err) => {
+          console.error('Error getting location:', err);
+          setError('Unable to get your location. Please enable location services.');
+          setLoading(false);
           
-          // Import Leaflet icon for markers
-          const L = await import('leaflet');
-          
-          // Custom icon for user location
-          const userIcon = L.divIcon({
-            html: `<div class="flex items-center justify-center w-8 h-8 bg-blue-500 rounded-full border-2 border-white">
-                    <span class="text-white">👨‍🌾</span>
-                   </div>`,
-            className: '',
-          });
-          
-          // Add user marker
-          L.marker([latitude, longitude], { icon: userIcon })
-            .addTo(map)
-            .bindPopup('Your location')
-            .openPopup();
-            
-          // Fetch nearby services
-          await fetchNearbyServices(latitude, longitude);
+          // Load example data anyway
+          loadExampleServices();
         }
+      );
+    } else {
+      setError('Geolocation is not supported in your browser.');
+      loadExampleServices();
+    }
+  }, []);
+  
+  useEffect(() => {
+    if (location) {
+      // In a real app, we would fetch services based on location
+      // For now, just load example data with slight randomization based on location
+      loadExampleServices();
+    }
+  }, [location]);
+  
+  const loadExampleServices = () => {
+    // Example services data - in a real app, this would come from an API
+    const exampleServices: Service[] = [
+      {
+        id: '1',
+        name: 'Krishna Fertilizers',
+        type: 'fertilizer',
+        distance: 2.3,
+        address: 'Main Road, Nashik, Maharashtra',
+        phone: '+91 9876543210',
+        website: 'https://example.com/krishna',
+        hours: '9:00 AM - 6:00 PM',
+        rating: 4.5,
+        verified: true
       },
-      (error) => {
-        console.error("Geolocation error:", error);
-        setLocationError(`Error getting your location: ${error.message}`);
-        setIsLoading(false);
-        
-        // Set default view to center of India
-        if (map) {
-          map.setView([20.5937, 78.9629], 5);
-        }
+      {
+        id: '2',
+        name: 'Ganesh Agro Center',
+        type: 'pesticide',
+        distance: 3.7,
+        address: 'Market Road, Nashik, Maharashtra',
+        phone: '+91 9876543211',
+        rating: 4.2,
+        verified: true
+      },
+      {
+        id: '3',
+        name: 'Kisan Farm Equipment',
+        type: 'equipment',
+        distance: 5.1,
+        address: 'Industrial Area, Nashik, Maharashtra',
+        phone: '+91 9876543212',
+        website: 'https://example.com/kisanequip',
+        hours: '8:00 AM - 7:00 PM',
+        rating: 3.9,
+        verified: false
+      },
+      {
+        id: '4',
+        name: 'Bharat Seeds',
+        type: 'seeds',
+        distance: 4.2,
+        address: 'Agricultural Complex, Nashik, Maharashtra',
+        phone: '+91 9876543213',
+        rating: 4.7,
+        verified: true
       }
-    );
+    ];
+    
+    // Add some randomization to distances
+    const randomizedServices = exampleServices.map(service => ({
+      ...service,
+      distance: parseFloat((service.distance + (Math.random() * 2 - 1)).toFixed(1))
+    }));
+    
+    // Sort by distance
+    randomizedServices.sort((a, b) => a.distance - b.distance);
+    
+    setServices(randomizedServices);
   };
-
-  // Fetch nearby services (simulated)
-  const fetchNearbyServices = async (lat: number, lng: number) => {
-    try {
-      // In a real app, this would be an API call to OpenStreetMap Overpass API 
-      // or a custom backend that queries for agricultural services
-      // For demo purpose, we'll simulate some data
-      
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Generate nearby points
-      const mockServices: Location[] = [
-        {
-          name: "Krishna Fertilizers",
-          lat: lat + 0.01,
-          lng: lng + 0.01,
-          type: "fertilizer",
-          address: "123 Farm Road",
-          contact: "+91 98765 43210",
-          distance: 1.2
-        },
-        {
-          name: "Shiva Pesticides",
-          lat: lat - 0.008,
-          lng: lng + 0.005,
-          type: "pesticide",
-          address: "45 Market Street",
-          contact: "+91 87654 32109",
-          distance: 0.9
-        },
-        {
-          name: "Lakshmi Seeds",
-          lat: lat + 0.005,
-          lng: lng - 0.01,
-          type: "seed",
-          address: "78 Grain Road",
-          contact: "+91 76543 21098",
-          distance: 1.5
-        },
-        {
-          name: "Ganesh Farm Equipment",
-          lat: lat - 0.012,
-          lng: lng - 0.007,
-          type: "equipment",
-          address: "90 Tractor Avenue",
-          contact: "+91 65432 10987",
-          distance: 2.1
-        }
-      ];
-      
-      setServices(mockServices);
-      
-      // Add markers for each service
-      if (map) {
-        const L = await import('leaflet');
-        
-        const getIconForType = (type: string) => {
-          const iconMap: Record<string, string> = {
-            fertilizer: '🌱',
-            pesticide: '🐛',
-            seed: '🌾',
-            equipment: '🚜'
-          };
-          
-          return L.divIcon({
-            html: `<div class="flex items-center justify-center w-8 h-8 bg-green-500 rounded-full border-2 border-white">
-                    <span class="text-white">${iconMap[type] || '🏪'}</span>
-                   </div>`,
-            className: '',
-          });
-        };
-        
-        mockServices.forEach(service => {
-          L.marker([service.lat, service.lng], { icon: getIconForType(service.type) })
-            .addTo(map)
-            .bindPopup(`
-              <strong>${service.name}</strong><br>
-              ${service.address}<br>
-              ${service.contact}<br>
-              <b>${service.distance} km away</b>
-            `);
-        });
-      }
-    } catch (error) {
-      console.error("Error fetching nearby services:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load nearby services. Please try again later.",
-        variant: "destructive"
-      });
-    } finally {
-      setIsLoading(false);
+  
+  const getServiceIcon = (type: string) => {
+    switch (type) {
+      case 'fertilizer':
+        return '🌱';
+      case 'pesticide':
+        return '🧪';
+      case 'equipment':
+        return '🚜';
+      case 'seeds':
+        return '🌾';
+      default:
+        return '🏪';
     }
   };
-
+  
+  const getServiceTypeName = (type: string) => {
+    switch (type) {
+      case 'fertilizer':
+        return t('fertilizer') || 'Fertilizer';
+      case 'pesticide':
+        return t('pesticide') || 'Pesticide';
+      case 'equipment':
+        return t('equipment') || 'Equipment';
+      case 'seeds':
+        return t('seeds') || 'Seeds';
+      default:
+        return type;
+    }
+  };
+  
+  const openDirections = (address: string) => {
+    const encodedAddress = encodeURIComponent(address);
+    const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodedAddress}`;
+    window.open(mapsUrl, '_blank');
+  };
+  
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle className="text-xl">{t('nearbyAgricultureServices')}</CardTitle>
-            <CardDescription>Find fertilizer, pesticide dealers and more near you</CardDescription>
-          </div>
-          {userLocation && (
-            <Button variant="outline" size="sm" onClick={getUserLocation}>
-              <Navigation className="h-4 w-4 mr-2" />
-              Refresh
-            </Button>
-          )}
-        </div>
+        <CardTitle className="flex items-center gap-2">
+          <MapPinIcon className="h-5 w-5 text-primary-600" />
+          {t('nearbyAgriculturalServices') || 'Nearby Agricultural Services'}
+        </CardTitle>
+        <CardDescription>
+          {t('servicesNearYourLocation') || 'Services near your location to help with your farming needs'}
+        </CardDescription>
       </CardHeader>
       <CardContent>
-        {locationError && (
-          <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-md mb-4 flex items-start">
-            <AlertTriangle className="h-5 w-5 text-red-500 mr-2 flex-shrink-0 mt-0.5" />
-            <div>
-              <h4 className="font-medium text-red-800 dark:text-red-300">Location Error</h4>
-              <p className="text-sm text-red-600 dark:text-red-400">{locationError}</p>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="mt-2" 
-                onClick={getUserLocation}
-              >
-                Try Again
-              </Button>
-            </div>
+        {loading ? (
+          <div className="text-center py-6">
+            <p>{t('loadingServices') || 'Loading nearby services...'}</p>
           </div>
-        )}
+        ) : error ? (
+          <div className="bg-amber-50 dark:bg-amber-900/20 p-4 rounded-md mb-4">
+            <p className="text-amber-700 dark:text-amber-400">{error}</p>
+            <p className="text-sm mt-2">
+              {t('showingDefaultServices') || 'Showing default services instead.'}
+            </p>
+          </div>
+        ) : null}
         
-        {/* Map Container */}
-        <div className="h-[300px] w-full rounded-md overflow-hidden border mb-4" ref={mapContainerRef}>
-          {isLoading && (
-            <div className="h-full w-full flex items-center justify-center bg-gray-100 dark:bg-gray-800">
-              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-600"></div>
-            </div>
-          )}
-        </div>
-        
-        {/* Services List */}
-        <div className="space-y-2 mt-4">
-          <h3 className="font-semibold">Nearby Services</h3>
-          
-          {isLoading ? (
-            Array(3).fill(0).map((_, i) => (
-              <div key={i} className="flex items-center p-3 rounded-md border">
-                <Skeleton className="h-10 w-10 rounded-full mr-3" />
-                <div className="space-y-2">
-                  <Skeleton className="h-4 w-48" />
-                  <Skeleton className="h-3 w-32" />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {services.map((service) => (
+            <div 
+              key={service.id} 
+              className="border rounded-lg p-4 hover:bg-slate-50 dark:hover:bg-slate-900/10 transition-colors"
+            >
+              <div className="flex justify-between items-start">
+                <div className="flex items-center gap-3">
+                  <div className="text-2xl">{getServiceIcon(service.type)}</div>
+                  <div>
+                    <h3 className="font-medium">{service.name}</h3>
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                      <span>{getServiceTypeName(service.type)}</span>
+                      <span>•</span>
+                      <span>{service.distance} km</span>
+                      {service.verified && (
+                        <>
+                          <span>•</span>
+                          <Badge variant="outline" className="px-1 py-0 text-[10px] font-normal text-green-600 border-green-400">
+                            {t('verified') || 'Verified'}
+                          </Badge>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1">
+                  {Array(5).fill(0).map((_, i) => (
+                    <span 
+                      key={i} 
+                      className={`text-xs ${
+                        i < Math.floor(service.rating) 
+                          ? 'text-amber-500' 
+                          : i < service.rating 
+                          ? 'text-amber-300' 
+                          : 'text-gray-300'
+                      }`}
+                    >
+                      ★
+                    </span>
+                  ))}
                 </div>
               </div>
-            ))
-          ) : services.length > 0 ? (
-            <div className="divide-y">
-              {services.map((service, index) => (
-                <div key={index} className="flex items-start py-3">
-                  <div className="bg-green-100 dark:bg-green-900/30 p-2 rounded-full mr-3">
-                    {service.type === 'fertilizer' && <Store className="h-5 w-5 text-green-600" />}
-                    {service.type === 'pesticide' && <Store className="h-5 w-5 text-orange-600" />}
-                    {service.type === 'seed' && <Store className="h-5 w-5 text-yellow-600" />}
-                    {service.type === 'equipment' && <Store className="h-5 w-5 text-blue-600" />}
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex justify-between">
-                      <h4 className="font-medium">{service.name}</h4>
-                      <span className="text-sm text-muted-foreground">{service.distance} km</span>
-                    </div>
-                    <div className="text-sm text-muted-foreground flex items-center mt-0.5">
-                      <MapPin className="h-3 w-3 mr-1" />
-                      {service.address}
-                    </div>
-                    <div className="text-sm flex items-center mt-0.5">
-                      <Phone className="h-3 w-3 mr-1" />
-                      {service.contact}
-                    </div>
-                  </div>
+              
+              <div className="mt-3 space-y-1 text-sm">
+                <div className="flex items-start gap-2">
+                  <MapPinIcon className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+                  <span>{service.address}</span>
                 </div>
-              ))}
+                
+                {service.phone && (
+                  <div className="flex items-center gap-2">
+                    <Phone className="h-4 w-4 text-muted-foreground" />
+                    <a 
+                      href={`tel:${service.phone}`}
+                      className="hover:text-primary-600 hover:underline"
+                    >
+                      {service.phone}
+                    </a>
+                  </div>
+                )}
+                
+                {service.hours && (
+                  <div className="flex items-center gap-2">
+                    <Clock className="h-4 w-4 text-muted-foreground" />
+                    <span>{service.hours}</span>
+                  </div>
+                )}
+                
+                {service.website && (
+                  <div className="flex items-center gap-2">
+                    <Globe className="h-4 w-4 text-muted-foreground" />
+                    <a 
+                      href={service.website}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="hover:text-primary-600 hover:underline"
+                    >
+                      {service.website.replace(/^https?:\/\/(www\.)?/, '')}
+                    </a>
+                  </div>
+                )}
+              </div>
+              
+              <div className="mt-4 flex justify-end">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex items-center gap-1"
+                  onClick={() => openDirections(service.address)}
+                >
+                  {t('getDirections') || 'Get Directions'}
+                  <ArrowUpRight className="h-3.5 w-3.5" />
+                </Button>
+              </div>
             </div>
-          ) : (
-            <div className="text-center py-6 text-muted-foreground">
-              {!locationError && (
-                <>
-                  <p>No agriculture services found nearby.</p>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="mt-2" 
-                    onClick={getUserLocation}
-                  >
-                    <Navigation className="h-4 w-4 mr-2" />
-                    Try Again
-                  </Button>
-                </>
-              )}
-            </div>
-          )}
+          ))}
         </div>
+        
+        {services.length === 0 && !loading && !error && (
+          <div className="text-center py-6">
+            <p className="text-muted-foreground">
+              {t('noServicesFound') || 'No agricultural services found nearby.'}
+            </p>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

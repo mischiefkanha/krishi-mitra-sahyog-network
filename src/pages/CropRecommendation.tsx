@@ -1,346 +1,640 @@
 
 import { useState } from 'react';
 import Layout from '@/components/layout/Layout';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Slider } from '@/components/ui/slider';
+import { Loader2, MicIcon, Plant, Download } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
-import { Loader2, ThumbsUp } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
+import { generateCropRecommendationReport } from '@/utils/pdfGenerator';
 
 interface CropRecommendationResult {
-  crop: string;
+  recommendedCrop: string;
   confidence: number;
-  description: string;
-  suitable: boolean;
-  tips: string[];
+  apiResponse: any;
 }
 
-const cropDescriptions = {
-  'rice': 'Rice is a staple food crop in India, requiring high rainfall and humidity.',
-  'wheat': 'Wheat is a rabi crop that grows well in moderately cool environments.',
-  'maize': 'Maize is an important cereal crop that thrives in well-drained soil and moderate temperatures.',
-  'cotton': 'Cotton is a cash crop that thrives in warm weather and well-drained soil.',
-  'sugarcane': 'Sugarcane is a tropical crop that requires hot and humid conditions.',
-  'jute': 'Jute is a rain-fed crop that grows well in hot and humid climate.',
-  'coffee': 'Coffee is a subtropical crop that prefers shade and humidity.',
-  'coconut': 'Coconut grows well in coastal regions with sandy soil and high humidity.',
-  'tea': 'Tea is grown in hilly regions with well-drained soil and cool temperatures.',
-};
-
-const getCropInfo = (crop: string) => {
-  const lcCrop = crop.toLowerCase();
-  
-  const description = cropDescriptions[lcCrop as keyof typeof cropDescriptions] || 
-    `${crop} is a crop that grows in specific conditions based on soil and climate factors.`;
-  
-  const tips = [
-    `Optimal planting season for ${crop}`,
-    `Ensure proper irrigation for ${crop}`,
-    `Monitor for common pests that affect ${crop}`
-  ];
-  
-  return {
-    description,
-    tips
-  };
-};
+const soilTypes = [
+  'Clay', 'Sandy', 'Loamy', 'Black', 'Red', 'Silty', 'Peaty', 'Chalky'
+];
 
 const CropRecommendation = () => {
   const [soilType, setSoilType] = useState('');
-  const [soilpH, setSoilpH] = useState('');
-  const [temperature, setTemperature] = useState('');
-  const [humidity, setHumidity] = useState('');
-  const [rainfall, setRainfall] = useState('');
-  const [location, setLocation] = useState('');
-  const [nitrogen, setNitrogen] = useState('');
-  const [phosphorus, setPhosphorus] = useState('');
-  const [potassium, setPotassium] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [results, setResults] = useState<CropRecommendationResult[]>([]);
+  const [nitrogen, setNitrogen] = useState(50);
+  const [phosphorus, setPhosphorus] = useState(50);
+  const [potassium, setPotassium] = useState(50);
+  const [ph, setPh] = useState(7);
+  const [temperature, setTemperature] = useState(25);
+  const [humidity, setHumidity] = useState(50);
+  const [rainfall, setRainfall] = useState(100);
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState<CropRecommendationResult | null>(null);
+  const [isListening, setIsListening] = useState(false);
+  const [activeVoiceField, setActiveVoiceField] = useState<string | null>(null);
   const { toast } = useToast();
   const { user } = useAuth();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+  
+  // Speech recognition for voice input
+  const startListening = (field: string) => {
+    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+      toast({
+        title: "Voice input not supported",
+        description: "Your browser doesn't support voice input. Please use a modern browser.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setActiveVoiceField(field);
+    setIsListening(true);
+
+    // @ts-ignore
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const recognition = new SpeechRecognition();
+    recognition.lang = language === 'en' ? 'en-US' : language === 'hi' ? 'hi-IN' : 'mr-IN';
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+
+    recognition.start();
+
+    recognition.onresult = (event: any) => {
+      const transcript = event.results[0][0].transcript;
+      const numValue = parseFloat(transcript.replace(/[^0-9.]/g, ''));
+
+      if (!isNaN(numValue)) {
+        switch (field) {
+          case 'nitrogen':
+            setNitrogen(Math.min(100, Math.max(0, numValue)));
+            break;
+          case 'phosphorus':
+            setPhosphorus(Math.min(100, Math.max(0, numValue)));
+            break;
+          case 'potassium':
+            setPotassium(Math.min(100, Math.max(0, numValue)));
+            break;
+          case 'ph':
+            setPh(Math.min(14, Math.max(0, numValue)));
+            break;
+          case 'temperature':
+            setTemperature(Math.min(50, Math.max(-10, numValue)));
+            break;
+          case 'humidity':
+            setHumidity(Math.min(100, Math.max(0, numValue)));
+            break;
+          case 'rainfall':
+            setRainfall(Math.min(1000, Math.max(0, numValue)));
+            break;
+        }
+
+        toast({
+          title: "Voice input received",
+          description: `Value set to ${numValue}`,
+        });
+      } else if (field === 'soilType') {
+        // Try to find matching soil type
+        const lowercaseTranscript = transcript.toLowerCase();
+        const matchedSoil = soilTypes.find(soil => 
+          lowercaseTranscript.includes(soil.toLowerCase())
+        );
+        
+        if (matchedSoil) {
+          setSoilType(matchedSoil);
+          toast({
+            title: "Voice input received",
+            description: `Soil type set to ${matchedSoil}`,
+          });
+        } else {
+          toast({
+            title: "Voice input unclear",
+            description: "Could not detect soil type. Please try again or select manually.",
+            variant: "destructive"
+          });
+        }
+      }
+      
+      setIsListening(false);
+      setActiveVoiceField(null);
+    };
+
+    recognition.onerror = () => {
+      setIsListening(false);
+      setActiveVoiceField(null);
+      toast({
+        title: "Voice input error",
+        description: "There was an error processing your voice input. Please try again.",
+        variant: "destructive"
+      });
+    };
+
+    recognition.onend = () => {
+      setIsListening(false);
+      setActiveVoiceField(null);
+    };
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
+    
+    if (!soilType) {
+      toast({
+        title: "Missing Information",
+        description: "Please select a soil type",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    setLoading(true);
     
     try {
+      // Call the crop recommendation function
       const { data, error } = await supabase.functions.invoke('crop-recommendation', {
         body: {
           soilType,
-          nitrogen: parseFloat(nitrogen),
-          phosphorus: parseFloat(phosphorus),
-          potassium: parseFloat(potassium),
-          ph: parseFloat(soilpH),
-          temperature: parseFloat(temperature),
-          humidity: parseFloat(humidity),
-          rainfall: parseFloat(rainfall),
-          location: location || "RegionX"
+          nitrogen,
+          phosphorus,
+          potassium,
+          ph,
+          temperature,
+          humidity,
+          rainfall
         }
       });
       
       if (error) throw error;
       
-      const recommendedCrop = data.recommendedCrop;
-      const confidence = data.confidence;
+      setResult(data);
       
-      const { description, tips } = getCropInfo(recommendedCrop);
-      
-      const newResults = [
-        {
-          crop: recommendedCrop,
-          confidence: confidence * 100,
-          description,
-          suitable: true,
-          tips
-        }
-      ];
-      
+      // Save to database if user is logged in
       if (user) {
-        const { error: dbError } = await supabase
-          .from('crop_recommendations')
-          .insert({
-            user_id: user.id,
-            soil_type: soilType,
-            nitrogen: parseFloat(nitrogen),
-            phosphorus: parseFloat(phosphorus),
-            potassium: parseFloat(potassium),
-            ph: parseFloat(soilpH),
-            temperature: parseFloat(temperature),
-            humidity: parseFloat(humidity),
-            rainfall: parseFloat(rainfall),
-            recommended_crop: recommendedCrop,
-            confidence: confidence
-          });
-        
-        if (dbError) {
-          console.error("Failed to save to database:", dbError);
-        }
+        await supabase.from('crop_recommendations').insert({
+          user_id: user.id,
+          soil_type: soilType,
+          nitrogen,
+          phosphorus,
+          potassium,
+          ph,
+          temperature,
+          humidity,
+          rainfall,
+          recommended_crop: data.recommendedCrop,
+          confidence: data.confidence
+        });
       }
       
-      setResults(newResults);
-      
       toast({
-        title: t("recommendationsReady"),
-        description: t("recommendationsMessage"),
+        title: "Recommendation Ready",
+        description: "We've analyzed your inputs and have recommendations ready.",
       });
     } catch (error: any) {
-      console.error("Error in crop recommendation:", error);
+      console.error('Error getting crop recommendations:', error);
       toast({
-        title: t("error"),
-        description: error.message || t("cropRecommendationError"),
+        title: "Error",
+        description: error.message || "There was a problem getting recommendations. Please try again.",
         variant: "destructive"
       });
     } finally {
-      setIsLoading(false);
+      setLoading(false);
+    }
+  };
+
+  const handleDownloadReport = async () => {
+    if (!result) return;
+    
+    try {
+      const reportData = [{
+        id: 'current',
+        soil_type: soilType,
+        recommended_crop: result.recommendedCrop,
+        confidence: result.confidence,
+        timestamp: new Date().toISOString(),
+        nitrogen,
+        phosphorus,
+        potassium,
+        ph,
+        temperature,
+        humidity,
+        rainfall
+      }];
+      
+      await generateCropRecommendationReport(reportData);
+      
+      toast({
+        title: "Report Generated",
+        description: "Your crop recommendation report has been downloaded.",
+      });
+    } catch (error) {
+      console.error("Error generating report:", error);
+      toast({
+        title: "Error",
+        description: "Failed to generate report. Please try again.",
+        variant: "destructive"
+      });
     }
   };
 
   return (
     <Layout>
-      <div className="container mx-auto px-4 py-12">
-        <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-12">
-            <h1 className="text-3xl font-bold text-gray-900 mb-4">{t("cropRecommendationSystem")}</h1>
-            <p className="text-xl text-gray-600">
-              {t("cropRecommendationDescription")}
-            </p>
-          </div>
-          
-          <Card>
-            <CardContent className="p-6">
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="container mx-auto px-4 py-8">
+        <h1 className="text-3xl font-bold text-primary-900 dark:text-primary-400 mb-6">
+          {t('cropRecommendation')}
+        </h1>
+        
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2">
+            <Card>
+              <CardHeader>
+                <CardTitle>{t('enterSoilDetails')}</CardTitle>
+                <CardDescription>
+                  {t('cropRecommendationDesc')}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleSubmit} className="space-y-6">
                   <div className="space-y-2">
-                    <Label htmlFor="soilType">{t("soilType")}</Label>
-                    <Select value={soilType} onValueChange={setSoilType} required>
-                      <SelectTrigger id="soilType">
-                        <SelectValue placeholder={t("selectSoilType")} />
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="soilType">{t('soilType')}</Label>
+                      <Button 
+                        type="button" 
+                        size="sm" 
+                        variant="outline" 
+                        onClick={() => startListening('soilType')}
+                        disabled={isListening}
+                        className="flex items-center gap-1"
+                      >
+                        {activeVoiceField === 'soilType' ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <MicIcon className="h-4 w-4" />
+                        )}
+                        {t('speak')}
+                      </Button>
+                    </div>
+                    <Select value={soilType} onValueChange={setSoilType}>
+                      <SelectTrigger>
+                        <SelectValue placeholder={t('selectSoilType')} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="clay">{t("clay")}</SelectItem>
-                        <SelectItem value="loamy">{t("loamy")}</SelectItem>
-                        <SelectItem value="sandy">{t("sandy")}</SelectItem>
-                        <SelectItem value="black">{t("black")}</SelectItem>
-                        <SelectItem value="red">{t("red")}</SelectItem>
-                        <SelectItem value="silt">{t("silt")}</SelectItem>
+                        {soilTypes.map((type) => (
+                          <SelectItem key={type} value={type}>
+                            {type}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
                   
-                  <div className="space-y-2">
-                    <Label htmlFor="nitrogen">{t("nitrogen")}</Label>
-                    <Input 
-                      id="nitrogen" 
-                      type="number" 
-                      placeholder={t("nitrogenExample")} 
-                      min="0" 
-                      value={nitrogen}
-                      onChange={(e) => setNitrogen(e.target.value)}
-                      required
-                    />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Label htmlFor="nitrogen">
+                          {t('nitrogen')} (N): {nitrogen} kg/ha
+                        </Label>
+                        <Button 
+                          type="button" 
+                          size="sm" 
+                          variant="outline" 
+                          onClick={() => startListening('nitrogen')}
+                          disabled={isListening}
+                          className="flex items-center gap-1"
+                        >
+                          {activeVoiceField === 'nitrogen' ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <MicIcon className="h-4 w-4" />
+                          )}
+                          {t('speak')}
+                        </Button>
+                      </div>
+                      <Slider 
+                        id="nitrogen"
+                        min={0} 
+                        max={100} 
+                        step={1} 
+                        value={[nitrogen]} 
+                        onValueChange={(value) => setNitrogen(value[0])} 
+                      />
+                      <Input 
+                        type="number"
+                        value={nitrogen}
+                        onChange={(e) => setNitrogen(Number(e.target.value))}
+                        min={0}
+                        max={100}
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Label htmlFor="phosphorus">
+                          {t('phosphorus')} (P): {phosphorus} kg/ha
+                        </Label>
+                        <Button 
+                          type="button" 
+                          size="sm" 
+                          variant="outline" 
+                          onClick={() => startListening('phosphorus')}
+                          disabled={isListening}
+                          className="flex items-center gap-1"
+                        >
+                          {activeVoiceField === 'phosphorus' ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <MicIcon className="h-4 w-4" />
+                          )}
+                          {t('speak')}
+                        </Button>
+                      </div>
+                      <Slider 
+                        id="phosphorus"
+                        min={0} 
+                        max={100} 
+                        step={1} 
+                        value={[phosphorus]} 
+                        onValueChange={(value) => setPhosphorus(value[0])} 
+                      />
+                      <Input 
+                        type="number"
+                        value={phosphorus}
+                        onChange={(e) => setPhosphorus(Number(e.target.value))}
+                        min={0}
+                        max={100}
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Label htmlFor="potassium">
+                          {t('potassium')} (K): {potassium} kg/ha
+                        </Label>
+                        <Button 
+                          type="button" 
+                          size="sm" 
+                          variant="outline" 
+                          onClick={() => startListening('potassium')}
+                          disabled={isListening}
+                          className="flex items-center gap-1"
+                        >
+                          {activeVoiceField === 'potassium' ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <MicIcon className="h-4 w-4" />
+                          )}
+                          {t('speak')}
+                        </Button>
+                      </div>
+                      <Slider 
+                        id="potassium"
+                        min={0} 
+                        max={100} 
+                        step={1} 
+                        value={[potassium]} 
+                        onValueChange={(value) => setPotassium(value[0])} 
+                      />
+                      <Input 
+                        type="number"
+                        value={potassium}
+                        onChange={(e) => setPotassium(Number(e.target.value))}
+                        min={0}
+                        max={100}
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Label htmlFor="ph">
+                          {t('ph')}: {ph}
+                        </Label>
+                        <Button 
+                          type="button" 
+                          size="sm" 
+                          variant="outline" 
+                          onClick={() => startListening('ph')}
+                          disabled={isListening}
+                          className="flex items-center gap-1"
+                        >
+                          {activeVoiceField === 'ph' ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <MicIcon className="h-4 w-4" />
+                          )}
+                          {t('speak')}
+                        </Button>
+                      </div>
+                      <Slider 
+                        id="ph"
+                        min={0} 
+                        max={14} 
+                        step={0.1} 
+                        value={[ph]} 
+                        onValueChange={(value) => setPh(value[0])} 
+                      />
+                      <Input 
+                        type="number"
+                        value={ph}
+                        onChange={(e) => setPh(Number(e.target.value))}
+                        min={0}
+                        max={14}
+                        step={0.1}
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Label htmlFor="temperature">
+                          {t('temperature')}: {temperature}°C
+                        </Label>
+                        <Button 
+                          type="button" 
+                          size="sm" 
+                          variant="outline" 
+                          onClick={() => startListening('temperature')}
+                          disabled={isListening}
+                          className="flex items-center gap-1"
+                        >
+                          {activeVoiceField === 'temperature' ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <MicIcon className="h-4 w-4" />
+                          )}
+                          {t('speak')}
+                        </Button>
+                      </div>
+                      <Slider 
+                        id="temperature"
+                        min={-10} 
+                        max={50} 
+                        step={0.1} 
+                        value={[temperature]} 
+                        onValueChange={(value) => setTemperature(value[0])} 
+                      />
+                      <Input 
+                        type="number"
+                        value={temperature}
+                        onChange={(e) => setTemperature(Number(e.target.value))}
+                        min={-10}
+                        max={50}
+                        step={0.1}
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Label htmlFor="humidity">
+                          {t('humidity')}: {humidity}%
+                        </Label>
+                        <Button 
+                          type="button" 
+                          size="sm" 
+                          variant="outline" 
+                          onClick={() => startListening('humidity')}
+                          disabled={isListening}
+                          className="flex items-center gap-1"
+                        >
+                          {activeVoiceField === 'humidity' ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <MicIcon className="h-4 w-4" />
+                          )}
+                          {t('speak')}
+                        </Button>
+                      </div>
+                      <Slider 
+                        id="humidity"
+                        min={0} 
+                        max={100} 
+                        step={1} 
+                        value={[humidity]} 
+                        onValueChange={(value) => setHumidity(value[0])} 
+                      />
+                      <Input 
+                        type="number"
+                        value={humidity}
+                        onChange={(e) => setHumidity(Number(e.target.value))}
+                        min={0}
+                        max={100}
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Label htmlFor="rainfall">
+                          {t('rainfall')}: {rainfall} mm
+                        </Label>
+                        <Button 
+                          type="button" 
+                          size="sm" 
+                          variant="outline" 
+                          onClick={() => startListening('rainfall')}
+                          disabled={isListening}
+                          className="flex items-center gap-1"
+                        >
+                          {activeVoiceField === 'rainfall' ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <MicIcon className="h-4 w-4" />
+                          )}
+                          {t('speak')}
+                        </Button>
+                      </div>
+                      <Slider 
+                        id="rainfall"
+                        min={0} 
+                        max={1000} 
+                        step={1} 
+                        value={[rainfall]} 
+                        onValueChange={(value) => setRainfall(value[0])} 
+                      />
+                      <Input 
+                        type="number"
+                        value={rainfall}
+                        onChange={(e) => setRainfall(Number(e.target.value))}
+                        min={0}
+                        max={1000}
+                      />
+                    </div>
                   </div>
                   
-                  <div className="space-y-2">
-                    <Label htmlFor="phosphorus">{t("phosphorus")}</Label>
-                    <Input 
-                      id="phosphorus" 
-                      type="number" 
-                      placeholder={t("phosphorusExample")} 
-                      min="0" 
-                      value={phosphorus}
-                      onChange={(e) => setPhosphorus(e.target.value)}
-                      required
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="potassium">{t("potassium")}</Label>
-                    <Input 
-                      id="potassium" 
-                      type="number" 
-                      placeholder={t("potassiumExample")} 
-                      min="0" 
-                      value={potassium}
-                      onChange={(e) => setPotassium(e.target.value)}
-                      required
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="soilpH">{t("soilPH")}</Label>
-                    <Input 
-                      id="soilpH" 
-                      type="number" 
-                      placeholder={t("soilPHExample")} 
-                      min="0" 
-                      max="14" 
-                      step="0.1"
-                      value={soilpH}
-                      onChange={(e) => setSoilpH(e.target.value)}
-                      required
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="temperature">{t("avgTemperature")}</Label>
-                    <Input 
-                      id="temperature" 
-                      type="number" 
-                      placeholder={t("temperatureExample")} 
-                      min="0" 
-                      max="50"
-                      value={temperature}
-                      onChange={(e) => setTemperature(e.target.value)}
-                      required
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="humidity">{t("humidity")}</Label>
-                    <Input 
-                      id="humidity" 
-                      type="number" 
-                      placeholder={t("humidityExample")} 
-                      min="0" 
-                      max="100"
-                      value={humidity}
-                      onChange={(e) => setHumidity(e.target.value)}
-                      required
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="rainfall">{t("rainfall")}</Label>
-                    <Input 
-                      id="rainfall" 
-                      type="number" 
-                      placeholder={t("rainfallExample")} 
-                      min="0"
-                      value={rainfall}
-                      onChange={(e) => setRainfall(e.target.value)}
-                      required
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="location">{t("location")}</Label>
-                    <Input 
-                      id="location" 
-                      placeholder={t("locationExample")} 
-                      value={location}
-                      onChange={(e) => setLocation(e.target.value)}
-                      required
-                    />
-                  </div>
-                </div>
-                
-                <Button 
-                  type="submit" 
-                  className="w-full md:w-auto bg-primary-600 hover:bg-primary-700" 
-                  disabled={isLoading}
-                >
-                  {isLoading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      {t("analyzing")}
-                    </>
-                  ) : (
-                    t("getCropRecommendations")
-                  )}
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
+                  <Button
+                    type="submit"
+                    className="w-full bg-primary-600 hover:bg-primary-700 mt-6"
+                    disabled={loading}
+                  >
+                    {loading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        {t('analyzing')}
+                      </>
+                    ) : (
+                      t('getCropRecommendation')
+                    )}
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
+          </div>
           
-          {results.length > 0 && (
-            <div className="mt-12">
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">{t("recommendedCrops")}</h2>
-              <div className="space-y-6">
-                {results.map((result, index) => (
-                  <Card key={index} className={`border-l-4 ${result.suitable ? 'border-l-green-500' : 'border-l-yellow-500'}`}>
-                    <CardContent className="p-6">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <h3 className="text-xl font-semibold text-gray-900 mb-2">{result.crop}</h3>
-                          <div className="flex items-center mb-4">
-                            <div className="bg-gray-200 h-2 rounded-full w-32 mr-2">
-                              <div 
-                                className={`h-2 rounded-full ${result.suitable ? 'bg-green-500' : 'bg-yellow-500'}`} 
-                                style={{ width: `${result.confidence}%` }}
-                              ></div>
-                            </div>
-                            <span className="text-sm text-gray-600">{result.confidence.toFixed(0)}% {t("match")}</span>
-                          </div>
-                          <p className="text-gray-700 mb-4">{result.description}</p>
-                        </div>
-                        {result.suitable && (
-                          <div className="bg-green-100 p-2 rounded-full">
-                            <ThumbsUp className="h-6 w-6 text-green-600" />
-                          </div>
-                        )}
+          <div>
+            <Card className={result ? "border-primary-500" : ""}>
+              <CardHeader>
+                <CardTitle>{t('recommendation')}</CardTitle>
+                <CardDescription>
+                  {result ? t('basedOnYourInputs') : t('fillFormForRecommendation')}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {result ? (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-center">
+                      <div className="bg-primary-50 dark:bg-primary-900/20 w-32 h-32 rounded-full flex items-center justify-center mb-4">
+                        <Plant className="h-16 w-16 text-primary-600 dark:text-primary-400" />
                       </div>
-                      
-                      <div className="mt-4">
-                        <h4 className="font-medium text-gray-900 mb-2">{t("farmingTips")}:</h4>
-                        <ul className="list-disc pl-5 space-y-1">
-                          {result.tips.map((tip, i) => (
-                            <li key={i} className="text-gray-700">{tip}</li>
-                          ))}
-                        </ul>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </div>
-          )}
+                    </div>
+                    
+                    <h3 className="text-2xl font-bold text-center text-primary-800 dark:text-primary-300">
+                      {result.recommendedCrop}
+                    </h3>
+                    
+                    <div className="bg-muted p-4 rounded-md">
+                      <p className="font-medium">{t('confidence')}: {(result.confidence * 100).toFixed(1)}%</p>
+                      <p className="mt-2 text-sm">{t('soilType')}: {soilType}</p>
+                      <p className="text-sm">N-P-K: {nitrogen}-{phosphorus}-{potassium}</p>
+                      <p className="text-sm">pH: {ph}</p>
+                    </div>
+                    
+                    <div className="space-y-1 text-sm text-muted-foreground">
+                      <p>{t('temperatureValue')}: {temperature}°C</p>
+                      <p>{t('humidityValue')}: {humidity}%</p>
+                      <p>{t('rainfallValue')}: {rainfall} mm</p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <p className="text-muted-foreground">
+                      {t('enterSoilDetailsToGetRecommendation')}
+                    </p>
+                  </div>
+                )}
+              </CardContent>
+              {result && (
+                <CardFooter>
+                  <Button 
+                    onClick={handleDownloadReport} 
+                    className="w-full flex items-center gap-2"
+                  >
+                    <Download className="h-4 w-4" />
+                    {t('downloadReport')}
+                  </Button>
+                </CardFooter>
+              )}
+            </Card>
+          </div>
         </div>
       </div>
     </Layout>

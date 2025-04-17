@@ -1,372 +1,468 @@
+
 import { useState, useRef } from 'react';
 import Layout from '@/components/layout/Layout';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
-import { Camera, Upload, X, Loader2, AlertTriangle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { v4 as uuidv4 } from 'uuid';
 import { useAuth } from '@/context/AuthContext';
+import { useLanguage } from '@/context/LanguageContext';
+import { Camera, Upload, AlertTriangle, Download, Loader2 } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
+import { generateDiseaseDetectionReport } from '@/utils/pdfGenerator';
 
-interface DetectionResult {
+interface DiseaseDetectionResult {
   diseaseName: string;
   confidence: number;
   description: string;
   treatment: string[];
-  severity: 'low' | 'medium' | 'high' | 'unknown';
+  severity: string;
 }
 
 const DiseaseDetection = () => {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
-  const [isDragging, setIsDragging] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [result, setResult] = useState<DetectionResult | null>(null);
+  const [dragging, setDragging] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState<DiseaseDetectionResult | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const { user } = useAuth();
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file && file.type.startsWith('image/')) {
-      const reader = new FileReader();
-      reader.onload = () => {
-        setSelectedImage(reader.result as string);
-        setResult(null);
-      };
-      reader.readAsDataURL(file);
+  const { t } = useLanguage();
+  
+  const handleImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      processImageFile(file);
     }
   };
 
-  const handleDragOver = (e: React.DragEvent) => {
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
-    setIsDragging(true);
+    setDragging(true);
   };
 
   const handleDragLeave = () => {
-    setIsDragging(false);
+    setDragging(false);
   };
 
-  const handleDrop = (e: React.DragEvent) => {
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
-    setIsDragging(false);
+    setDragging(false);
     
-    const file = e.dataTransfer.files?.[0];
-    if (file && file.type.startsWith('image/')) {
-      const reader = new FileReader();
-      reader.onload = () => {
-        setSelectedImage(reader.result as string);
-        setResult(null);
-      };
-      reader.readAsDataURL(file);
-    } else {
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+      const file = files[0];
+      if (file.type.startsWith('image/')) {
+        processImageFile(file);
+      } else {
+        toast({
+          title: "Invalid File Type",
+          description: "Please upload an image file.",
+          variant: "destructive"
+        });
+      }
+    }
+  };
+
+  const captureImage = () => {
+    // Check if camera API is supported
+    if (!('mediaDevices' in navigator) || !('getUserMedia' in navigator.mediaDevices)) {
       toast({
-        title: "Invalid File",
-        description: "Please upload an image file (JPEG, PNG, etc.)",
-        variant: "destructive",
+        title: "Camera Not Supported",
+        description: "Your browser does not support camera access.",
+        variant: "destructive"
       });
+      return;
     }
-  };
-
-  const handleRemoveImage = () => {
-    setSelectedImage(null);
-    setResult(null);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
-  };
-
-  const handleAnalyze = async () => {
-    if (!selectedImage || !user) return;
     
-    setIsLoading(true);
+    // Create temporary video and canvas elements
+    const video = document.createElement('video');
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('2d');
+    
+    // Get user media (camera)
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+      .then(stream => {
+        // Show a preview modal
+        const modal = document.createElement('div');
+        modal.style.position = 'fixed';
+        modal.style.top = '0';
+        modal.style.left = '0';
+        modal.style.width = '100%';
+        modal.style.height = '100%';
+        modal.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
+        modal.style.zIndex = '1000';
+        modal.style.display = 'flex';
+        modal.style.flexDirection = 'column';
+        modal.style.alignItems = 'center';
+        modal.style.justifyContent = 'center';
+        
+        video.srcObject = stream;
+        video.style.maxWidth = '100%';
+        video.style.maxHeight = '70vh';
+        video.style.transform = 'scaleX(-1)'; // Mirror view
+        video.play();
+        
+        const buttonContainer = document.createElement('div');
+        buttonContainer.style.marginTop = '20px';
+        buttonContainer.style.display = 'flex';
+        buttonContainer.style.gap = '10px';
+        
+        const captureBtn = document.createElement('button');
+        captureBtn.textContent = 'Capture';
+        captureBtn.style.padding = '10px 20px';
+        captureBtn.style.backgroundColor = '#4CAF50';
+        captureBtn.style.border = 'none';
+        captureBtn.style.color = 'white';
+        captureBtn.style.borderRadius = '5px';
+        captureBtn.style.cursor = 'pointer';
+        
+        const cancelBtn = document.createElement('button');
+        cancelBtn.textContent = 'Cancel';
+        cancelBtn.style.padding = '10px 20px';
+        cancelBtn.style.backgroundColor = '#f44336';
+        cancelBtn.style.border = 'none';
+        cancelBtn.style.color = 'white';
+        cancelBtn.style.borderRadius = '5px';
+        cancelBtn.style.cursor = 'pointer';
+        
+        buttonContainer.appendChild(captureBtn);
+        buttonContainer.appendChild(cancelBtn);
+        
+        modal.appendChild(video);
+        modal.appendChild(buttonContainer);
+        document.body.appendChild(modal);
+        
+        const cleanup = () => {
+          // Stop video and remove modal
+          const tracks = stream.getTracks();
+          tracks.forEach(track => track.stop());
+          document.body.removeChild(modal);
+        };
+        
+        captureBtn.onclick = () => {
+          // Set canvas dimensions to match video
+          canvas.width = video.videoWidth;
+          canvas.height = video.videoHeight;
+          
+          // Draw current video frame to canvas
+          if (context) {
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+          }
+          
+          // Convert canvas to data URL
+          const imageDataUrl = canvas.toDataURL('image/jpeg');
+          setSelectedImage(imageDataUrl);
+          
+          cleanup();
+          
+          // Process the captured image
+          canvas.toBlob((blob) => {
+            if (blob) {
+              const file = new File([blob], "captured-image.jpg", { type: "image/jpeg" });
+              processImageFile(file);
+            }
+          }, 'image/jpeg', 0.8);
+        };
+        
+        cancelBtn.onclick = cleanup;
+      })
+      .catch(error => {
+        console.error('Camera access error:', error);
+        toast({
+          title: "Camera Access Error",
+          description: "Could not access camera. Please check permissions.",
+          variant: "destructive"
+        });
+      });
+  };
+
+  const processImageFile = (file: File) => {
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: "Invalid File Type",
+        description: "Please upload an image file.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      setSelectedImage(e.target?.result as string);
+    };
+    reader.readAsDataURL(file);
+    
+    // Now detect plant disease
+    detectDisease(file);
+  };
+
+  const detectDisease = async (file: File) => {
+    setLoading(true);
+    setResult(null);
     
     try {
-      // Upload image to storage
-      const fileName = `${uuidv4()}.jpg`;
-      const filePath = `${fileName}`;
+      // Convert file to base64
+      const base64Image = await fileToBase64(file);
       
-      // Get base64 data from image
-      const base64Data = selectedImage;
-
-      // Call disease detection edge function
+      // Call the disease detection function
       const { data, error } = await supabase.functions.invoke('disease-detection', {
-        body: { imageBase64: base64Data }
+        body: { imageBase64: base64Image }
       });
       
       if (error) throw error;
       
-      // Upload image to storage
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('crop_images')
-        .upload(filePath, base64ToBlob(base64Data), {
-          contentType: 'image/jpeg'
-        });
-        
-      if (uploadError) throw uploadError;
-
-      // Save result to database
-      const { error: dbError } = await supabase
-        .from('disease_detections')
-        .insert({
-          user_id: user.id,
-          image_path: filePath,
-          disease_name: data.diseaseName,
-          confidence: data.confidence,
-          description: data.description,
-          treatment: data.treatment
-        });
-        
-      if (dbError) {
-        console.error("Failed to save to database:", dbError);
-      }
-      
-      // Set result
       setResult(data);
       
+      // Save to database if user is logged in
+      if (user) {
+        await supabase.from('disease_detections').insert({
+          user_id: user.id,
+          disease_name: data.diseaseName,
+          confidence: data.confidence,
+          severity: data.severity
+        });
+      }
+      
       toast({
-        title: "Analysis Complete",
-        description: "We've detected the crop disease. See results below.",
+        title: data.diseaseName === "Healthy Plant" ? "Good News!" : "Disease Detected",
+        description: data.diseaseName === "Healthy Plant" 
+          ? "Your plant appears to be healthy." 
+          : `We've detected ${data.diseaseName} with ${(data.confidence * 100).toFixed(1)}% confidence.`,
       });
     } catch (error: any) {
-      console.error("Error in disease detection:", error);
+      console.error('Error detecting disease:', error);
       toast({
-        title: "Analysis Failed",
-        description: error.message || "Failed to analyze the image.",
+        title: "Error",
+        description: error.message || "There was a problem detecting plant disease. Please try again.",
         variant: "destructive"
       });
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
-  
-  // Helper function to convert base64 to blob
-  const base64ToBlob = (base64: string) => {
-    const parts = base64.split(';base64,');
-    const contentType = parts[0].split(':')[1];
-    const raw = window.atob(parts[1]);
-    const rawLength = raw.length;
-    const uInt8Array = new Uint8Array(rawLength);
-    
-    for (let i = 0; i < rawLength; ++i) {
-      uInt8Array[i] = raw.charCodeAt(i);
-    }
-    
-    return new Blob([uInt8Array], { type: contentType });
-  };
-  
-  const captureImage = () => {
-    // This would typically launch the device camera
-    // For demo, we'll just simulate it
-    toast({
-      title: "Camera Feature",
-      description: "In a full implementation, this would access your device camera.",
+
+  // Utility function to convert File to base64
+  const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = (error) => reject(error);
     });
   };
 
   const getSeverityColor = (severity: string) => {
-    switch (severity) {
-      case 'low':
-        return 'bg-yellow-500';
-      case 'medium':
-        return 'bg-orange-500';
+    switch (severity.toLowerCase()) {
       case 'high':
-        return 'bg-red-500';
+        return 'bg-red-500 hover:bg-red-600';
+      case 'medium':
+        return 'bg-amber-500 hover:bg-amber-600';
+      case 'low':
+        return 'bg-green-500 hover:bg-green-600';
       default:
-        return 'bg-gray-500';
+        return 'bg-blue-500 hover:bg-blue-600';
+    }
+  };
+
+  const handleDownloadReport = async () => {
+    if (!result || !selectedImage) return;
+    
+    try {
+      const reportData = [{
+        id: 'current',
+        disease_name: result.diseaseName,
+        confidence: result.confidence,
+        timestamp: new Date().toISOString(),
+        image: selectedImage
+      }];
+      
+      await generateDiseaseDetectionReport(reportData);
+      
+      toast({
+        title: "Report Generated",
+        description: "Your disease detection report has been downloaded.",
+      });
+    } catch (error) {
+      console.error("Error generating report:", error);
+      toast({
+        title: "Error",
+        description: "Failed to generate report. Please try again.",
+        variant: "destructive"
+      });
     }
   };
 
   return (
     <Layout>
-      <div className="container mx-auto px-4 py-12">
-        <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-12">
-            <h1 className="text-3xl font-bold text-gray-900 mb-4">Crop Disease Detection</h1>
-            <p className="text-xl text-gray-600">
-              Upload an image of your crop to detect diseases and get treatment recommendations
-            </p>
-          </div>
+      <div className="container mx-auto px-4 py-8">
+        <h1 className="text-3xl font-bold text-primary-900 dark:text-primary-400 mb-6">
+          {t('diseaseDetection')}
+        </h1>
+        
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>{t('uploadImage')}</CardTitle>
+              <CardDescription>
+                {t('diseaseDetectionDesc')}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleImageSelect}
+                ref={fileInputRef}
+                className="hidden"
+              />
+              
+              <div
+                className={`border-2 border-dashed rounded-lg p-8 text-center ${
+                  dragging ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20' : 'border-muted-foreground/25'
+                }`}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+              >
+                {selectedImage ? (
+                  <div className="space-y-4">
+                    <img
+                      src={selectedImage}
+                      alt="Selected plant"
+                      className="max-h-80 mx-auto rounded-lg"
+                    />
+                    <Button onClick={() => {
+                      setSelectedImage(null);
+                      setResult(null);
+                      if (fileInputRef.current) {
+                        fileInputRef.current.value = '';
+                      }
+                    }} variant="outline">
+                      {t('changeImage')}
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <Upload className="mx-auto h-12 w-12 text-muted-foreground" />
+                    <p className="text-sm text-muted-foreground">
+                      {t('dragDropImage')}
+                    </p>
+                    <div className="flex flex-wrap justify-center gap-4">
+                      <Button
+                        onClick={() => fileInputRef.current?.click()}
+                        className="flex items-center gap-2"
+                      >
+                        <Upload className="h-4 w-4" />
+                        {t('browse')}
+                      </Button>
+                      <Button
+                        onClick={captureImage}
+                        variant="outline"
+                        className="flex items-center gap-2"
+                      >
+                        <Camera className="h-4 w-4" />
+                        {t('takePhoto')}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+              
+              {loading && (
+                <div className="mt-6 space-y-2">
+                  <p className="text-center text-sm">{t('analyzingImage')}</p>
+                  <Progress value={undefined} className="h-2 w-full" />
+                </div>
+              )}
+            </CardContent>
+          </Card>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div>
-              <Card>
-                <CardContent className="p-6">
-                  <div
-                    className={`border-2 border-dashed rounded-lg p-6 flex flex-col items-center justify-center h-64 cursor-pointer transition-colors ${
-                      isDragging ? 'border-primary-500 bg-primary-50' : 'border-gray-300 hover:border-primary-400'
-                    }`}
-                    onDragOver={handleDragOver}
-                    onDragLeave={handleDragLeave}
-                    onDrop={handleDrop}
-                    onClick={() => fileInputRef.current?.click()}
-                  >
-                    {selectedImage ? (
-                      <div className="relative w-full h-full">
-                        <img
-                          src={selectedImage}
-                          alt="Crop"
-                          className="w-full h-full object-contain"
-                        />
-                        <button
-                          className="absolute top-2 right-2 bg-red-100 rounded-full p-1 hover:bg-red-200"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleRemoveImage();
-                          }}
-                        >
-                          <X className="h-5 w-5 text-red-600" />
-                        </button>
-                      </div>
-                    ) : (
-                      <>
-                        <Upload className="h-12 w-12 text-gray-400 mb-4" />
-                        <p className="text-gray-600 text-center mb-2">
-                          Drag and drop an image here, or click to browse
-                        </p>
-                        <p className="text-gray-500 text-sm text-center">
-                          Supports JPEG, PNG (max 10MB)
-                        </p>
-                      </>
-                    )}
-                  </div>
-                  <input
-                    type="file"
-                    ref={fileInputRef}
-                    className="hidden"
-                    accept="image/*"
-                    onChange={handleFileChange}
-                  />
-                  
-                  <div className="flex space-x-4 mt-4">
-                    <Button
-                      className="w-full bg-primary-600 hover:bg-primary-700 flex items-center justify-center"
-                      onClick={handleAnalyze}
-                      disabled={!selectedImage || isLoading}
-                    >
-                      {isLoading ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Analyzing...
-                        </>
-                      ) : (
-                        'Analyze Image'
-                      )}
-                    </Button>
-                    <Button
-                      variant="outline"
-                      className="w-1/3 flex items-center justify-center"
-                      onClick={captureImage}
-                    >
-                      <Camera className="mr-2 h-4 w-4" />
-                      Camera
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-            
-            <div>
+          <Card>
+            <CardHeader>
+              <CardTitle>{t('results')}</CardTitle>
+              <CardDescription>
+                {result ? t('detectionResults') : t('uploadImageForResults')}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
               {result ? (
-                <Card>
-                  <CardContent className="p-6">
-                    <div className="flex items-center mb-4">
-                      <h3 className="text-xl font-semibold text-gray-900 mr-3">{result.diseaseName}</h3>
-                      <div className={`px-2 py-1 rounded text-white text-xs font-medium ${getSeverityColor(result.severity)}`}>
-                        {result.severity.charAt(0).toUpperCase() + result.severity.slice(1)} Severity
-                      </div>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-xl font-semibold">{result.diseaseName}</h3>
+                    <Badge 
+                      className={getSeverityColor(result.severity)}
+                    >
+                      {result.severity === 'low' && result.diseaseName !== 'Healthy Plant' 
+                        ? t('earlyStageSeverity')
+                        : result.severity === 'medium'
+                        ? t('moderateSeverity')
+                        : result.severity === 'high'
+                        ? t('severeSeverity')
+                        : t('healthySeverity')
+                      }
+                    </Badge>
+                  </div>
+                  
+                  <div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span>{t('confidence')}</span>
+                      <span>{(result.confidence * 100).toFixed(1)}%</span>
                     </div>
-                    
-                    <div className="flex items-center mb-4">
-                      <div className="bg-gray-200 h-2 rounded-full w-32 mr-2">
-                        <div 
-                          className="h-2 rounded-full bg-primary-600" 
-                          style={{ width: `${result.confidence * 100}%` }}
-                        ></div>
-                      </div>
-                      <span className="text-sm text-gray-600">{(result.confidence * 100).toFixed(0)}% confidence</span>
+                    <div className="w-full bg-muted h-2 rounded-full mt-1">
+                      <div 
+                        className="bg-primary-600 h-2 rounded-full" 
+                        style={{ width: `${result.confidence * 100}%` }}
+                      ></div>
                     </div>
-                    
-                    <div className="mb-4">
-                      <h4 className="font-medium text-gray-900 mb-2">Description:</h4>
-                      <p className="text-gray-700">{result.description}</p>
-                    </div>
-                    
+                  </div>
+                  
+                  <div className="bg-muted p-4 rounded-md">
+                    <h4 className="font-medium mb-2">{t('description')}</h4>
+                    <p className="text-sm">{result.description}</p>
+                  </div>
+                  
+                  {result.treatment.length > 0 && (
                     <div>
-                      <h4 className="font-medium text-gray-900 mb-2">Treatment Recommendations:</h4>
-                      <ul className="list-disc pl-5 space-y-1">
-                        {result.treatment.map((item, i) => (
-                          <li key={i} className="text-gray-700">{item}</li>
+                      <h4 className="font-medium mb-2">{t('recommendedTreatment')}</h4>
+                      <ul className="list-disc list-inside text-sm space-y-1">
+                        {result.treatment.map((item, index) => (
+                          <li key={index}>{item}</li>
                         ))}
                       </ul>
                     </div>
-                    
-                    {result.severity === 'high' && (
-                      <div className="mt-4 bg-red-50 p-4 rounded-lg flex items-start">
-                        <AlertTriangle className="h-5 w-5 text-red-600 mr-2 flex-shrink-0 mt-0.5" />
-                        <p className="text-red-700 text-sm">
-                          This disease is highly severe and requires immediate action. 
-                          Consider consulting an agricultural expert for additional guidance.
-                        </p>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
+                  )}
+                  
+                  {result.diseaseName !== "Healthy Plant" && (
+                    <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-md flex items-start gap-3">
+                      <AlertTriangle className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
+                      <p className="text-sm">
+                        {t('consultExpertAdvice')}
+                      </p>
+                    </div>
+                  )}
+                </div>
               ) : (
-                <div className="h-full flex flex-col items-center justify-center text-center p-6 bg-gray-50 rounded-lg border border-gray-200">
-                  <img src="/placeholder.svg" alt="Disease Detection" className="w-32 h-32 mb-4 opacity-30" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">No Disease Detected Yet</h3>
-                  <p className="text-gray-600">
-                    Upload an image of your crop and click "Analyze Image" to detect diseases and get treatment recommendations.
+                <div className="text-center py-12">
+                  <p className="text-muted-foreground">
+                    {t('uploadImageToSeeResults')}
                   </p>
                 </div>
               )}
-            </div>
-          </div>
-          
-          <div className="mt-12">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">How It Works</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <Card>
-                <CardContent className="p-6 text-center">
-                  <div className="bg-primary-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Upload className="h-6 w-6 text-primary-600" />
-                  </div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Upload Image</h3>
-                  <p className="text-gray-600">
-                    Take a clear photo of the affected part of your crop and upload it to our system.
-                  </p>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardContent className="p-6 text-center">
-                  <div className="bg-primary-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <svg className="h-6 w-6 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
-                    </svg>
-                  </div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">AI Analysis</h3>
-                  <p className="text-gray-600">
-                    Our AI model analyzes the image to identify the disease, its severity, and confidence level.
-                  </p>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardContent className="p-6 text-center">
-                  <div className="bg-primary-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <svg className="h-6 w-6 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                    </svg>
-                  </div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Get Treatment</h3>
-                  <p className="text-gray-600">
-                    Receive detailed information about the disease and specific treatment recommendations.
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
+            </CardContent>
+            {result && (
+              <CardFooter>
+                <Button 
+                  onClick={handleDownloadReport} 
+                  className="w-full flex items-center gap-2"
+                >
+                  <Download className="h-4 w-4" />
+                  {t('downloadReport')}
+                </Button>
+              </CardFooter>
+            )}
+          </Card>
         </div>
       </div>
     </Layout>

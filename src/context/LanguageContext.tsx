@@ -1,561 +1,367 @@
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
-export type Language = 'en' | 'mr' | 'hi';
+// Define available languages
+type LanguageCode = 'en' | 'mr' | 'hi';
 
-// Translation dictionary
-export const translations = {
-  en: {
-    // Navigation
-    home: 'Home',
-    dashboard: 'Dashboard',
-    cropRecommendation: 'Crop Recommendation',
-    diseaseDetection: 'Disease Detection',
-    marketplace: 'Marketplace',
-    profile: 'Profile',
-    feedback: 'Feedback',
-    tutorials: 'Tutorials',
-    forum: 'Community Forum',
-    // Auth
-    login: 'Login',
-    register: 'Register',
-    signOut: 'Sign Out',
-    // Profile
-    personalInfo: 'Personal Information',
-    firstName: 'First Name',
-    lastName: 'Last Name',
-    email: 'Email',
-    phone: 'Phone',
-    phoneNumber: 'Phone Number',
-    address: 'Address',
-    bio: 'Bio',
-    enterFirstName: 'Enter your first name',
-    enterLastName: 'Enter your last name',
-    enterPhone: 'Enter your phone number',
-    enterAddress: 'Enter your address',
-    bioPlaceholder: 'Tell us a little about yourself',
-    saveChanges: 'Save Changes',
-    saving: 'Saving...',
-    saveProfile: 'Save Profile',
-    myProfile: 'My Profile',
-    profileInfo: 'Profile Information',
-    changePhoto: 'Change Photo',
-    myActivity: 'My Activity',
-    profileUpdated: 'Profile Updated',
-    profileUpdateSuccess: 'Your profile has been successfully updated.',
-    updateFailed: 'Update Failed',
-    profileUpdateError: 'There was a problem updating your profile.',
-    pleaseLogin: 'Please log in to view your profile.',
-    // Reports
-    reportGenerated: 'Report Generated',
-    cropReportDownloaded: 'Crop recommendation report has been downloaded.',
-    diseaseReportDownloaded: 'Disease detection report has been downloaded.',
-    activityReportDownloaded: 'Activity report has been downloaded.',
-    reportGenerationFailed: 'Report Generation Failed',
-    reportGenerationError: 'There was a problem generating your report.',
-    // Dashboard
-    overview: 'Overview',
-    crops: 'Crops',
-    diseases: 'Diseases',
-    activity: 'Activity Overview',
-    cropDistribution: 'Crop Distribution',
-    recentCropRecommendations: 'Recent Crop Recommendations',
-    recentDiseaseDetections: 'Recent Disease Detections',
-    downloadReports: 'Download Reports',
-    downloadCropRecommendations: 'Download Crop Recommendations',
-    downloadDiseaseDetections: 'Download Disease Detections',
-    downloadCompleteActivity: 'Download Complete Activity',
-    // Feedback
-    feedbackLabel: 'Send Feedback',
-    feedbackName: 'Your Name',
-    feedbackEmail: 'Your Email',
-    feedbackMessage: 'Message',
-    feedbackCategory: 'Category',
-    feedbackSubmit: 'Submit Feedback',
-    feedbackSuccess: 'Thank you for your feedback!',
-    // Table headers
-    date: 'Date',
-    crop: 'Crop',
-    soilType: 'Soil Type',
-    confidence: 'Confidence',
-    disease: 'Disease',
-    noCropRecommendations: 'No crop recommendations found.',
-    noDiseaseDetections: 'No disease detections found.',
-    // Crop Recommendation
-    recommendationsReady: 'Recommendations Ready',
-    recommendationsMessage: 'We\'ve analyzed your data and prepared crop recommendations.',
-    error: 'Error',
-    cropRecommendationError: 'Failed to get crop recommendations.',
-    cropRecommendationSystem: 'Crop Recommendation System',
-    cropRecommendationDescription: 'Get AI-powered recommendations for the best crops to grow based on your specific soil and climate conditions.',
-    selectSoilType: 'Select soil type',
-    clay: 'Clay',
-    loamy: 'Loamy',
-    sandy: 'Sandy',
-    black: 'Black',
-    red: 'Red',
-    silt: 'Silt',
-    nitrogen: 'Nitrogen (kg/ha)',
-    nitrogenExample: 'e.g., 80',
-    phosphorus: 'Phosphorus (kg/ha)',
-    phosphorusExample: 'e.g., 45',
-    potassium: 'Potassium (kg/ha)',
-    potassiumExample: 'e.g., 60',
-    soilPH: 'Soil pH Level',
-    soilPHExample: 'e.g., 6.5',
-    avgTemperature: 'Average Temperature (°C)',
-    temperatureExample: 'e.g., 25',
-    humidity: 'Humidity (%)',
-    humidityExample: 'e.g., 60',
-    rainfall: 'Annual Rainfall (mm)',
-    rainfallExample: 'e.g., 1200',
-    location: 'Location (District/State)',
-    locationExample: 'e.g., Pune, Maharashtra',
-    analyzing: 'Analyzing...',
-    getCropRecommendations: 'Get Crop Recommendations',
-    recommendedCrops: 'Recommended Crops',
-    match: 'match',
-    farmingTips: 'Farming Tips',
-    // New translations for added features
-    nearbyAgricultureServices: 'Nearby Agriculture Services',
-    findNearbyServices: 'Find fertilizer, pesticide dealers and more near you',
-    locationError: 'Location Error',
-    tryAgain: 'Try Again',
-    nearbyServices: 'Nearby Services',
-    noServicesFound: 'No agriculture services found nearby.',
-    distance: 'Distance',
-    refresh: 'Refresh',
-    // Tutorials
-    tutorialsTitle: 'Agricultural Tutorials',
-    tutorialsDescription: 'Learn farming techniques through video lessons',
-    uploadTutorial: 'Upload Tutorial',
-    tutorialTitle: 'Tutorial Title',
-    tutorialDescription: 'Tutorial Description',
-    tutorialCategory: 'Category',
-    tutorialVideo: 'Video',
-    upload: 'Upload',
-    uploading: 'Uploading...',
-    cropCare: 'Crop Care',
-    diseasePrevention: 'Disease Prevention',
-    organicFarming: 'Organic Farming',
-    waterManagement: 'Water Management',
-    soilHealth: 'Soil Health',
-    farmEquipment: 'Farm Equipment',
-    viewAll: 'View All',
-    // Forum
-    communityForum: 'Community Forum',
-    askQuestion: 'Ask a Question',
-    questionTitle: 'Question Title',
-    questionDetails: 'Question Details',
-    postQuestion: 'Post Question',
-    category: 'Category',
-    sortBy: 'Sort By',
-    newest: 'Newest',
-    mostVoted: 'Most Voted',
-    searchQuestions: 'Search questions...',
-    replies: 'Replies',
-    votes: 'Votes',
-    views: 'Views',
-    reply: 'Reply',
-    yourAnswer: 'Your Answer',
-    postAnswer: 'Post Answer',
-    upvote: 'Upvote',
-    downvote: 'Downvote',
-    // Voice input
-    tapToSpeak: 'Tap to speak',
-    listening: 'Listening...',
-    processingVoice: 'Processing voice...',
-    microphonePermission: 'Please allow microphone access',
-    // New Features
-    weatherAlerts: 'Weather Alerts',
-    cropCalendar: 'Crop Calendar',
-    askExpert: 'Ask an Expert',
-    marketRates: 'Market Rates',
-    successStories: 'Success Stories',
-    referralProgram: 'Refer & Earn',
-    eduVideos: 'Educational Videos',
-    weatherAlertsDesc: 'Get alerts based on local weather for your crops',
-    cropCalendarDesc: 'Track important farming dates and activities',
-    askExpertDesc: 'Get advice from agricultural experts',
-    marketRatesDesc: 'Check current prices at local markets',
-    offlineMode: 'Offline Mode',
-    offlineModeDesc: 'Access important information without internet'
+// Interface for the translations
+interface Translations {
+  [key: string]: {
+    en: string;
+    mr: string;
+    hi: string;
+  };
+}
+
+// Translation function type
+type TranslationFunction = (key: string) => string;
+
+// Context interface
+interface LanguageContextType {
+  language: LanguageCode;
+  setLanguage: (language: LanguageCode) => void;
+  t: TranslationFunction;
+}
+
+// Define translations
+const translations: Translations = {
+  // General
+  dashboard: {
+    en: 'Dashboard',
+    mr: 'डॅशबोर्ड',
+    hi: 'डैशबोर्ड'
   },
-  mr: {
-    // Navigation
-    home: 'मुख्यपृष्ठ',
-    dashboard: 'डॅशबोर्ड',
-    cropRecommendation: 'पीक शिफारस',
-    diseaseDetection: 'रोग शोध',
-    marketplace: 'बाजारपेठ',
-    profile: 'प्रोफाइल',
-    feedback: 'अभिप्राय',
-    tutorials: 'ट्युटोरियल्स',
-    forum: 'समुदाय मंच',
-    // Auth
-    login: 'लॉग इन',
-    register: 'नोंदणी करा',
-    signOut: 'साइन आउट',
-    // Profile
-    personalInfo: 'वैयक्तिक माहिती',
-    firstName: 'पहिले नाव',
-    lastName: 'आडनाव',
-    email: 'ईमेल',
-    phone: 'फोन',
-    phoneNumber: 'फोन नंबर',
-    address: 'पत्ता',
-    bio: 'परिचय',
-    enterFirstName: 'तुमचे पहिले नाव प्रविष्ट करा',
-    enterLastName: 'तुमचे आडनाव प्रविष्ट करा',
-    enterPhone: 'तुमचा फोन नंबर प्रविष्ट करा',
-    enterAddress: 'तुमचा पत्ता प्रविष्ट करा',
-    bioPlaceholder: 'स्वतःबद्दल थोडे सांगा',
-    saveChanges: 'बदल जतन करा',
-    saving: 'जतन करत आहे...',
-    saveProfile: 'प्रोफाइल जतन करा',
-    myProfile: 'माझे प्रोफाइल',
-    profileInfo: 'प्रोफाइल माहिती',
-    changePhoto: 'फोटो बदला',
-    myActivity: 'माझी क्रियाकलाप',
-    profileUpdated: 'प्रोफाइल अपडेट केले',
-    profileUpdateSuccess: 'तुमचे प्रोफाइल यशस्वीरित्या अपडेट केले गेले आहे.',
-    updateFailed: 'अपडेट अयशस्वी',
-    profileUpdateError: 'तुमचे प्रोफाइल अपडेट करण्यात समस्या आली.',
-    pleaseLogin: 'कृपया तुमचे प्रोफाइल पाहण्यासाठी लॉग इन करा.',
-    // Reports
-    reportGenerated: 'अहवाल तयार झाला',
-    cropReportDownloaded: 'पीक शिफारस अहवाल डाउनलोड केला गेला आहे.',
-    diseaseReportDownloaded: 'रोग शोध अहवाल डाउनलोड केला गेला आहे.',
-    activityReportDownloaded: 'क्रियाकलाप अहवाल डाउनलोड केला गेला आहे.',
-    reportGenerationFailed: 'अहवाल निर्मिती अयशस्वी',
-    reportGenerationError: 'तुमचा अहवाल तयार करण्यात समस्या आली.',
-    // Dashboard
-    overview: 'आढावा',
-    crops: 'पिके',
-    diseases: 'रोग',
-    activity: 'क्रियाकलाप आढावा',
-    cropDistribution: 'पीक वितरण',
-    recentCropRecommendations: 'अलीकडील पीक शिफारशी',
-    recentDiseaseDetections: 'अलीकडील रोग शोध',
-    downloadReports: 'अहवाल डाउनलोड करा',
-    downloadCropRecommendations: 'पीक शिफारशी डाउनलोड करा',
-    downloadDiseaseDetections: 'रोग शोध डाउनलोड करा',
-    downloadCompleteActivity: 'संपूर्ण क्रियाकलाप डाउनलोड करा',
-    // Feedback
-    feedbackLabel: 'अभिप्राय पाठवा',
-    feedbackName: 'तुमचे नाव',
-    feedbackEmail: 'तुमचा ईमेल',
-    feedbackMessage: 'संदेश',
-    feedbackCategory: 'श्रेणी',
-    feedbackSubmit: 'अभिप्राय सबमिट करा',
-    feedbackSuccess: 'तुमच्या अभिप्रायासाठी धन्यवाद!',
-    // Table headers
-    date: 'दिनांक',
-    crop: 'पीक',
-    soilType: 'माती प्रकार',
-    confidence: 'विश्वास',
-    disease: 'रोग',
-    noCropRecommendations: 'पीक शिफारशी आढळल्या नाहीत.',
-    noDiseaseDetections: 'रोग शोध आढळले नाहीत.',
-    // Crop Recommendation
-    recommendationsReady: 'शिफारशी तयार आहेत',
-    recommendationsMessage: 'आम्ही आपला डेटा विश्लेषित केला आहे आणि पीक शिफारशी तयार केल्या आहेत.',
-    error: 'त्रुटी',
-    cropRecommendationError: 'पीक शिफारशी मिळविण्यात अयशस्वी.',
-    cropRecommendationSystem: 'पीक शिफारस प्रणाली',
-    cropRecommendationDescription: 'आपल्या विशिष्ट माती आणि हवामान परिस्थितीच्या आधारे वाढवण्यासाठी सर्वोत्तम पिकांसाठी AI-संचालित शिफारशी मिळवा.',
-    selectSoilType: 'माती प्रकार निवडा',
-    clay: 'चिकणमाती',
-    loamy: 'मुरमाड',
-    sandy: 'वाळूयुक्त',
-    black: 'काळी',
-    red: 'लाल',
-    silt: 'गाळ',
-    nitrogen: 'नायट्रोजन (kg/ha)',
-    nitrogenExample: 'उदा., 80',
-    phosphorus: 'फॉस्फरस (kg/ha)',
-    phosphorusExample: 'उदा., 45',
-    potassium: 'पोटॅशियम (kg/ha)',
-    potassiumExample: 'उदा., 60',
-    soilPH: 'माती pH स्तर',
-    soilPHExample: 'उदा., 6.5',
-    avgTemperature: 'सरासरी तापमान (°C)',
-    temperatureExample: 'उदा., 25',
-    humidity: 'आर्द्रता (%)',
-    humidityExample: 'उदा., 60',
-    rainfall: 'वार्षिक पाऊस (mm)',
-    rainfallExample: 'उदा., 1200',
-    location: 'स्थान (जिल्हा/राज्य)',
-    locationExample: 'उदा., पुणे, महाराष्ट्र',
-    analyzing: 'विश्लेषण करत आहे...',
-    getCropRecommendations: 'पीक शिफारशी मिळवा',
-    recommendedCrops: 'शिफारस केलेली पिके',
-    match: 'जुळणी',
-    farmingTips: 'शेती टिप्स',
-    // New translations for added features
-    nearbyAgricultureServices: 'जवळपासच्या कृषि सेवा',
-    findNearbyServices: 'जवळपासचे खते, कीटकनाशके विक्रेते आणि इतर शोधा',
-    locationError: 'स्थान त्रुटी',
-    tryAgain: 'पुन्हा प्रयत्न करा',
-    nearbyServices: 'जवळपासच्या सेवा',
-    noServicesFound: 'जवळपास कोणत्याही कृषि सेवा आढळल्या नाहीत.',
-    distance: 'अंतर',
-    refresh: 'रिफ्रेश करा',
-    // Tutorials
-    tutorialsTitle: 'शेती ट्युटोरियल्स',
-    tutorialsDescription: 'व्हिडिओ धड्यांद्वारे शेती तंत्र शिका',
-    uploadTutorial: 'ट्युटोरियल अपलोड करा',
-    tutorialTitle: 'ट्युटोरियल शीर्षक',
-    tutorialDescription: 'ट्युटोरियल वर्णन',
-    tutorialCategory: 'श्रेणी',
-    tutorialVideo: 'व्हिडिओ',
-    upload: 'अपलोड करा',
-    uploading: 'अपलोड करत आहे...',
-    cropCare: 'पीक संगोपन',
-    diseasePrevention: 'रोग प्रतिबंध',
-    organicFarming: 'सेंद्रिय शेती',
-    waterManagement: 'पाणी व्यवस्थापन',
-    soilHealth: 'माती आरोग्य',
-    farmEquipment: 'शेती उपकरणे',
-    viewAll: 'सर्व पहा',
-    // Forum
-    communityForum: 'समुदाय मंच',
-    askQuestion: 'प्रश्न विचारा',
-    questionTitle: 'प्रश्न शीर्षक',
-    questionDetails: 'प्रश्न तपशील',
-    postQuestion: 'प्रश्न पोस्ट करा',
-    category: 'श्रेणी',
-    sortBy: 'क्रमवारी लावा',
-    newest: 'नवीनतम',
-    mostVoted: 'सर्वाधिक मतदान',
-    searchQuestions: 'प्रश्न शोधा...',
-    replies: 'उत्तरे',
-    votes: 'मते',
-    views: 'दृश्ये',
-    reply: 'उत्तर द्या',
-    yourAnswer: 'तुमचे उत्तर',
-    postAnswer: 'उत्तर पोस्ट करा',
-    upvote: 'मत द्या',
-    downvote: 'नकारात्मक मत',
-    // Voice input
-    tapToSpeak: 'बोलण्यासाठी टॅप करा',
-    listening: 'ऐकत आहे...',
-    processingVoice: 'आवाज प्रक्रिया करत आहे...',
-    microphonePermission: 'कृपया मायक्रोफोन अॅक्सेस द्या',
-    // New Features
-    weatherAlerts: 'हवामान सूचना',
-    cropCalendar: 'पीक कॅलेंडर',
-    askExpert: 'तज्ञांना विचारा',
-    marketRates: 'बाजार दर',
-    successStories: 'यश गाथा',
-    referralProgram: 'शेअर करा आणि कमवा',
-    eduVideos: 'शैक्षणिक व्हिडिओ',
-    weatherAlertsDesc: 'आपल्या पिकांसाठी स्थानिक हवामानावर आधारित सूचना मिळवा',
-    cropCalendarDesc: 'महत्त्वपूर्ण शेती तारखा आणि कार्ये ट्रॅक करा',
-    askExpertDesc: 'कृषी तज्ञांकडून सल्ला घ्या',
-    marketRatesDesc: 'स्थानिक बाजारात वर्तमान किंमती तपासा',
-    offlineMode: 'ऑफलाइन मोड',
-    offlineModeDesc: 'इंटरनेटशिवाय महत्त्वपूर्ण माहिती मिळवा'
+  home: {
+    en: 'Home',
+    mr: 'मुख्यपृष्ठ',
+    hi: 'होम'
   },
-  hi: {
-    // Navigation
-    home: 'होम',
-    dashboard: 'डैशबोर्ड',
-    cropRecommendation: 'फसल अनुशंसा',
-    diseaseDetection: 'रोग पहचान',
-    marketplace: 'मार्केटप्लेस',
-    profile: 'प्रोफाइल',
-    feedback: 'फीडबैक',
-    tutorials: 'ट्यूटोरियल',
-    forum: 'समुदाय मंच',
-    // Auth
-    login: 'लॉग इन',
-    register: 'रजिस्टर करें',
-    signOut: 'साइन आउट',
-    // Profile
-    personalInfo: 'व्यक्तिगत जानकारी',
-    firstName: 'पहला नाम',
-    lastName: 'अंतिम नाम',
-    email: 'ईमेल',
-    phone: 'फोन',
-    phoneNumber: 'फोन नंबर',
-    address: 'पता',
-    bio: 'परिचय',
-    enterFirstName: 'अपना पहला नाम दर्ज करें',
-    enterLastName: 'अपना अंतिम नाम दर्ज करें',
-    enterPhone: 'अपना फोन नंबर दर्ज करें',
-    enterAddress: 'अपना पता दर्ज करें',
-    bioPlaceholder: 'अपने बारे में थोड़ा बताएं',
-    saveChanges: 'परिवर्तन सहेजें',
-    saving: 'सहेज रहा है...',
-    saveProfile: 'प्रोफाइल सहेजें',
-    myProfile: 'मेरा प्रोफाइल',
-    profileInfo: 'प्रोफाइल जानकारी',
-    changePhoto: 'फोटो बदलें',
-    myActivity: 'मेरी गतिविधि',
-    profileUpdated: 'प्रोफाइल अपडेट हुआ',
-    profileUpdateSuccess: 'आपका प्रोफाइल सफलतापूर्वक अपडेट किया गया है।',
-    updateFailed: 'अपडेट विफल',
-    profileUpdateError: 'आपका प्रोफाइल अपडेट करने में समस्या हुई।',
-    pleaseLogin: 'अपना प्रोफाइल देखने के लिए कृपया लॉगिन करें।',
-    // Reports
-    reportGenerated: 'रिपोर्ट तैयार हुई',
-    cropReportDownloaded: 'फसल अनुशंसा रिपोर्ट डाउनलोड की गई है।',
-    diseaseReportDownloaded: 'रोग पहचान रिपोर्ट डाउनलोड की गई है।',
-    activityReportDownloaded: 'गतिविधि रिपोर्ट डाउनलोड की गई है।',
-    reportGenerationFailed: 'रिपोर्ट तैयार करना विफल',
-    reportGenerationError: 'आपकी रिपोर्ट तैयार करने में समस्या हुई।',
-    // Dashboard
-    overview: 'अवलोकन',
-    crops: 'फसलें',
-    diseases: 'रोग',
-    activity: 'गतिविधि अवलोकन',
-    cropDistribution: 'फसल वितरण',
-    recentCropRecommendations: 'हाल की फसल अनुशंसाएँ',
-    recentDiseaseDetections: 'हाल के रोग निदान',
-    downloadReports: 'रिपोर्ट डाउनलोड करें',
-    downloadCropRecommendations: 'फसल अनुशंसाएँ डाउनलोड करें',
-    downloadDiseaseDetections: 'रोग निदान डाउनलोड करें',
-    downloadCompleteActivity: 'पूरी गतिविधि डाउनलोड करें',
-    // Feedback
-    feedbackLabel: 'फीडबैक भेजें',
-    feedbackName: 'आपका नाम',
-    feedbackEmail: 'आपका ईमेल',
-    feedbackMessage: 'संदेश',
-    feedbackCategory: 'श्रेणी',
-    feedbackSubmit: 'फीडबैक सबमिट करें',
-    feedbackSuccess: 'आपके फीडबैक के लिए धन्यवाद!',
-    // Table headers
-    date: 'दिनांक',
-    crop: 'फसल',
-    soilType: 'मिट्टी का प्रकार',
-    confidence: 'विश्वास',
-    disease: 'रोग',
-    noCropRecommendations: 'कोई फसल अनुशंसा नहीं मिली।',
-    noDiseaseDetections: 'कोई रोग निदान नहीं मिला।',
-    // Crop Recommendation
-    recommendationsReady: 'अनुशंसाएँ तैयार हैं',
-    recommendationsMessage: 'हमने आपके डेटा का विश्लेषण किया है और फसल अनुशंसाएँ तैयार की हैं।',
-    error: 'त्रुटि',
-    cropRecommendationError: 'फसल अनुशंसाएँ प्राप्त करने में विफल।',
-    cropRecommendationSystem: 'फसल अनुशंसा प्रणाली',
-    cropRecommendationDescription: 'अपनी विशिष्ट मिट्टी और जलवायु स्थितियों के आधार पर उगाने के लिए सर्वोत्तम फसलों के लिए AI-संचालित अनुशंसाएँ प्राप्त करें।',
-    selectSoilType: 'मिट्टी का प्रकार चुनें',
-    clay: 'चिकनी मिट्टी',
-    loamy: 'दोमट',
-    sandy: 'रेतीली',
-    black: 'काली',
-    red: 'लाल',
-    silt: 'गाद',
-    nitrogen: 'नाइट्रोजन (kg/ha)',
-    nitrogenExample: 'जैसे, 80',
-    phosphorus: 'फॉस्फोरस (kg/ha)',
-    phosphorusExample: 'जैसे, 45',
-    potassium: 'पोटैशियम (kg/ha)',
-    potassiumExample: 'जैसे, 60',
-    soilPH: 'मिट्टी का pH स्तर',
-    soilPHExample: 'जैसे, 6.5',
-    avgTemperature: 'औसत तापमान (°C)',
-    temperatureExample: 'जैसे, 25',
-    humidity: 'आर्द्रता (%)',
-    humidityExample: 'जैसे, 60',
-    rainfall: 'वार्षिक वर्षा (mm)',
-    rainfallExample: 'जैसे, 1200',
-    location: 'स्थान (जिला/राज्य)',
-    locationExample: 'जैसे, पुणे, महाराष्ट्र',
-    analyzing: 'विश्लेषण कर रहा है...',
-    getCropRecommendations: 'फसल अनुशंसाएँ प्राप्त करें',
-    recommendedCrops: 'अनुशंसित फसलें',
-    match: 'मेल',
-    farmingTips: 'खेती युक्तियां',
-    // New translations for added features
-    nearbyAgricultureServices: 'आसपास कृषि सेवाएं',
-    findNearbyServices: 'आपके पास उर्वरक, कीटनाशक विक्रेता और अधिक खोजें',
-    locationError: 'स्थान त्रुटि',
-    tryAgain: 'पुनः प्रयास करें',
-    nearbyServices: 'आसपास की सेवाएं',
-    noServicesFound: 'आसपास कोई कृषि सेवा नहीं मिली।',
-    distance: 'दूरी',
-    refresh: 'रीफ्रेश करें',
-    // Tutorials
-    tutorialsTitle: 'कृषि ट्यूटोरियल',
-    tutorialsDescription: 'वीडियो पाठों के माध्यम से खेती तकनीक सीखें',
-    uploadTutorial: 'ट्यूटोरियल अपलोड करें',
-    tutorialTitle: 'ट्यूटोरियल शीर्षक',
-    tutorialDescription: 'ट्यूटोरियल विवरण',
-    tutorialCategory: 'श्रेणी',
-    tutorialVideo: 'वीडियो',
-    upload: 'अपलोड करें',
-    uploading: 'अपलोड हो रहा है...',
-    cropCare: 'फसल देखभाल',
-    diseasePrevention: 'रोग निवारण',
-    organicFarming: 'जैविक खेती',
-    waterManagement: 'जल प्रबंधन',
-    soilHealth: 'मिट्टी स्वास्थ्य',
-    farmEquipment: 'खेत उपकरण',
-    viewAll: 'सभी देखें',
-    // Forum
-    communityForum: 'समुदाय मंच',
-    askQuestion: 'प्रश्न पूछें',
-    questionTitle: 'प्रश्न शीर्षक',
-    questionDetails: 'प्रश्न विवरण',
-    postQuestion: 'प्रश्न पोस्ट करें',
-    category: 'श्रेणी',
-    sortBy: 'क्रमबद्ध करें',
-    newest: 'नवीनतम',
-    mostVoted: 'सबसे अधिक वोट वाले',
-    searchQuestions: 'प्रश्न खोजें...',
-    replies: 'जवाब',
-    votes: 'वोट',
-    views: 'दृश्य',
-    reply: 'जवाब दें',
-    yourAnswer: 'आपका उत्तर',
-    postAnswer: 'उत्तर पोस्ट करें',
-    upvote: 'अपवोट',
-    downvote: 'डाउनवोट',
-    // Voice input
-    tapToSpeak: 'बोलने के लिए टैप करें',
-    listening: 'सुन रहा है...',
-    processingVoice: 'आवाज प्रसंस्करण कर रहा है...',
-    microphonePermission: 'कृपया माइक्रोफोन एक्सेस की अनुमति दें',
-    // New Features
-    weatherAlerts: 'मौसम अलर्ट',
-    cropCalendar: 'फसल कैलेंडर',
-    askExpert: 'विशेषज्ञ से पूछें',
-    marketRates: 'बाजार भाव',
-    successStories: 'सफलता कहानियां',
-    referralProgram: 'रेफर करें और कमाएं',
-    eduVideos: 'शैक्षिक वीडियो',
-    weatherAlertsDesc: 'अपनी फसलों के लिए स्थानीय मौसम पर आधारित अलर्ट प्राप्त करें',
-    cropCalendarDesc: 'महत्वपूर्ण खेती तारीखों और गतिविधियों पर नज़र रखें',
-    askExpertDesc: 'कृषि विशेषज्ञों से सलाह प्राप्त करें',
-    marketRatesDesc: 'स्थानीय बाजारों में वर्तमान कीमतें चेक करें',
-    offlineMode: 'ऑफलाइन मोड',
-    offlineModeDesc: 'इंटरनेट कनेक्शन के बिना महत्वपूर्ण जानकारी एक्सेस करें'
+  profile: {
+    en: 'Profile',
+    mr: 'प्रोफाइल',
+    hi: 'प्रोफाइल'
+  },
+  settings: {
+    en: 'Settings',
+    mr: 'सेटिंग्ज',
+    hi: 'सेटिंग्स'
+  },
+  login: {
+    en: 'Login',
+    mr: 'लॉगिन',
+    hi: 'लॉगिन'
+  },
+  signup: {
+    en: 'Sign Up',
+    mr: 'साइन अप',
+    hi: 'साइन अप'
+  },
+  logout: {
+    en: 'Logout',
+    mr: 'लॉगआउट',
+    hi: 'लॉगआउट'
+  },
+  
+  // Crop Recommendation
+  cropRecommendation: {
+    en: 'Crop Recommendation',
+    mr: 'पीक शिफारस',
+    hi: 'फसल की सिफारिश'
+  },
+  cropRecommendationDesc: {
+    en: 'Enter soil details and environmental conditions to get personalized crop recommendations',
+    mr: 'वैयक्तिकृत पीक शिफारसी मिळवण्यासाठी मातीची माहिती आणि पर्यावरणीय परिस्थिती प्रविष्ट करा',
+    hi: 'व्यक्तिगत फसल सिफारिशें प्राप्त करने के लिए मिट्टी विवरण और पर्यावरणीय स्थितियां दर्ज करें'
+  },
+  enterSoilDetails: {
+    en: 'Enter Soil Details',
+    mr: 'मातीची माहिती प्रविष्ट करा',
+    hi: 'मिट्टी का विवरण दर्ज करें'
+  },
+  soilType: {
+    en: 'Soil Type',
+    mr: 'मातीचा प्रकार',
+    hi: 'मिट्टी का प्रकार'
+  },
+  selectSoilType: {
+    en: 'Select soil type',
+    mr: 'मातीचा प्रकार निवडा',
+    hi: 'मिट्टी का प्रकार चुनें'
+  },
+  nitrogen: {
+    en: 'Nitrogen',
+    mr: 'नायट्रोजन',
+    hi: 'नाइट्रोजन'
+  },
+  phosphorus: {
+    en: 'Phosphorus',
+    mr: 'फॉस्फरस',
+    hi: 'फास्फोरस'
+  },
+  potassium: {
+    en: 'Potassium',
+    mr: 'पोटॅशियम',
+    hi: 'पोटैशियम'
+  },
+  ph: {
+    en: 'pH Level',
+    mr: 'पीएच स्तर',
+    hi: 'पीएच स्तर'
+  },
+  temperature: {
+    en: 'Temperature',
+    mr: 'तापमान',
+    hi: 'तापमान'
+  },
+  humidity: {
+    en: 'Humidity',
+    mr: 'आर्द्रता',
+    hi: 'आर्द्रता'
+  },
+  rainfall: {
+    en: 'Rainfall',
+    mr: 'पाऊस',
+    hi: 'वर्षा'
+  },
+  getCropRecommendation: {
+    en: 'Get Crop Recommendation',
+    mr: 'पीक शिफारस मिळवा',
+    hi: 'फसल की सिफारिश प्राप्त करें'
+  },
+  recommendation: {
+    en: 'Recommendation',
+    mr: 'शिफारस',
+    hi: 'सिफारिश'
+  },
+  basedOnYourInputs: {
+    en: 'Based on your inputs',
+    mr: 'आपल्या प्रविष्टींवर आधारित',
+    hi: 'आपके इनपुट के आधार पर'
+  },
+  fillFormForRecommendation: {
+    en: 'Fill the form to get recommendation',
+    mr: 'शिफारस मिळवण्यासाठी फॉर्म भरा',
+    hi: 'सिफारिश प्राप्त करने के लिए फॉर्म भरें'
+  },
+  confidence: {
+    en: 'Confidence',
+    mr: 'विश्वास',
+    hi: 'विश्वास'
+  },
+  temperatureValue: {
+    en: 'Temperature',
+    mr: 'तापमान',
+    hi: 'तापमान'
+  },
+  humidityValue: {
+    en: 'Humidity',
+    mr: 'आर्द्रता',
+    hi: 'आर्द्रता'
+  },
+  rainfallValue: {
+    en: 'Rainfall',
+    mr: 'पाऊस',
+    hi: 'वर्षा'
+  },
+  downloadReport: {
+    en: 'Download Report',
+    mr: 'अहवाल डाउनलोड करा',
+    hi: 'रिपोर्ट डाउनलोड करें'
+  },
+  enterSoilDetailsToGetRecommendation: {
+    en: 'Enter soil details to get crop recommendations',
+    mr: 'पीक शिफारसी मिळवण्यासाठी मातीची माहिती प्रविष्ट करा',
+    hi: 'फसल की सिफारिशें प्राप्त करने के लिए मिट्टी का विवरण दर्ज करें'
+  },
+  analyzing: {
+    en: 'Analyzing...',
+    mr: 'विश्लेषण करत आहे...',
+    hi: 'विश्लेषण कर रहा है...'
+  },
+  speak: {
+    en: 'Speak',
+    mr: 'बोला',
+    hi: 'बोलें'
+  },
+  
+  // Disease Detection
+  diseaseDetection: {
+    en: 'Disease Detection',
+    mr: 'रोग निदान',
+    hi: 'रोग पहचान'
+  },
+  diseaseDetectionDesc: {
+    en: 'Upload a photo of your crop to detect diseases',
+    mr: 'रोग शोधण्यासाठी आपल्या पिकाचा फोटो अपलोड करा',
+    hi: 'रोगों का पता लगाने के लिए अपनी फसल की एक तस्वीर अपलोड करें'
+  },
+  uploadImage: {
+    en: 'Upload Image',
+    mr: 'प्रतिमा अपलोड करा',
+    hi: 'छवि अपलोड करें'
+  },
+  dragDropImage: {
+    en: 'Drag and drop image here, or click to browse',
+    mr: 'इथे प्रतिमा ड्रॅग आणि ड्रॉप करा, किंवा ब्राउझ करण्यासाठी क्लिक करा',
+    hi: 'यहां छवि खींचें और छोड़ें, या ब्राउज़ करने के लिए क्लिक करें'
+  },
+  browse: {
+    en: 'Browse Files',
+    mr: 'फाइल्स ब्राउझ करा',
+    hi: 'फ़ाइलें ब्राउज़ करें'
+  },
+  takePhoto: {
+    en: 'Take Photo',
+    mr: 'फोटो काढा',
+    hi: 'फोटो लें'
+  },
+  results: {
+    en: 'Results',
+    mr: 'परिणाम',
+    hi: 'परिणाम'
+  },
+  detectionResults: {
+    en: 'Disease detection results',
+    mr: 'रोग निदान परिणाम',
+    hi: 'रोग पहचान परिणाम'
+  },
+  uploadImageForResults: {
+    en: 'Upload an image to see results',
+    mr: 'परिणाम पाहण्यासाठी प्रतिमा अपलोड करा',
+    hi: 'परिणाम देखने के लिए एक छवि अपलोड करें'
+  },
+  description: {
+    en: 'Description',
+    mr: 'वर्णन',
+    hi: 'विवरण'
+  },
+  recommendedTreatment: {
+    en: 'Recommended Treatment',
+    mr: 'शिफारस केलेले उपचार',
+    hi: 'अनुशंसित उपचार'
+  },
+  consultExpertAdvice: {
+    en: 'Please consult with an agricultural expert for professional advice on treatment.',
+    mr: 'कृपया उपचारांबद्दल व्यावसायिक सल्ल्यासाठी कृषी तज्ञांचा सल्ला घ्या.',
+    hi: 'उपचार पर पेशेवर सलाह के लिए कृपया एक कृषि विशेषज्ञ से परामर्श करें।'
+  },
+  uploadImageToSeeResults: {
+    en: 'Upload an image of your crop to detect diseases',
+    mr: 'रोग शोधण्यासाठी आपल्या पिकाची प्रतिमा अपलोड करा',
+    hi: 'रोगों का पता लगाने के लिए अपनी फसल की एक छवि अपलोड करें'
+  },
+  analyzingImage: {
+    en: 'Analyzing image...',
+    mr: 'प्रतिमा विश्लेषण करत आहे...',
+    hi: 'छवि का विश्लेषण कर रहा है...'
+  },
+  changeImage: {
+    en: 'Change Image',
+    mr: 'प्रतिमा बदला',
+    hi: 'छवि बदलें'
+  },
+  severeSeverity: {
+    en: 'Severe',
+    mr: 'गंभीर',
+    hi: 'गंभीर'
+  },
+  moderateSeverity: {
+    en: 'Moderate',
+    mr: 'मध्यम',
+    hi: 'मध्यम'
+  },
+  earlyStageSeverity: {
+    en: 'Early Stage',
+    mr: 'सुरुवातीचा टप्पा',
+    hi: 'प्रारंभिक अवस्था'
+  },
+  healthySeverity: {
+    en: 'Healthy',
+    mr: 'निरोगी',
+    hi: 'स्वस्थ'
+  },
+  
+  // Dashboard
+  overview: {
+    en: 'Overview',
+    mr: 'अवलोकन',
+    hi: 'अवलोकन'
+  },
+  crops: {
+    en: 'Crops',
+    mr: 'पिके',
+    hi: 'फसलें'
+  },
+  diseases: {
+    en: 'Diseases',
+    mr: 'रोग',
+    hi: 'रोग'
+  },
+  activity: {
+    en: 'Activity',
+    mr: 'क्रियाकलाप',
+    hi: 'गतिविधि'
+  },
+  cropDistribution: {
+    en: 'Crop Distribution',
+    mr: 'पीक वितरण',
+    hi: 'फसल वितरण'
+  },
+  recentCropRecommendations: {
+    en: 'Recent Crop Recommendations',
+    mr: 'अलीकडील पीक शिफारसी',
+    hi: 'हाल की फसल सिफारिशें'
+  },
+  recentDiseaseDetections: {
+    en: 'Recent Disease Detections',
+    mr: 'अलीकडील रोग निदान',
+    hi: 'हाल के रोग का पता लगाना'
+  },
+  downloadReports: {
+    en: 'Download Reports',
+    mr: 'अहवाल डाउनलोड करा',
+    hi: 'रिपोर्ट डाउनलोड करें'
   }
 };
 
-interface LanguageContextType {
-  language: Language;
-  setLanguage: (lang: Language) => void;
-  t: (key: keyof typeof translations.en) => string;
-}
+// Create context with default values
+const LanguageContext = createContext<LanguageContextType>({
+  language: 'en',
+  setLanguage: () => {},
+  t: () => '',
+});
 
-const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
-
-export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [language, setLanguage] = useState<Language>(() => {
-    const savedLanguage = localStorage.getItem('language');
-    return (savedLanguage as Language) || 'en';
+// Provider component
+export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const [language, setLanguage] = useState<LanguageCode>(() => {
+    // Initialize language from localStorage or default to 'en'
+    if (typeof window !== 'undefined') {
+      const savedLanguage = localStorage.getItem('language');
+      return (savedLanguage === 'en' || savedLanguage === 'mr' || savedLanguage === 'hi') 
+        ? savedLanguage 
+        : 'en';
+    }
+    return 'en';
   });
 
+  // Save language preference to localStorage
   useEffect(() => {
-    localStorage.setItem('language', language);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('language', language);
+    }
   }, [language]);
 
   // Translation function
-  const t = (key: keyof typeof translations.en): string => {
-    return translations[language][key] || key;
+  const t: TranslationFunction = (key) => {
+    if (translations[key]?.[language]) {
+      return translations[key][language];
+    }
+    // Fallback to English if translation is missing
+    if (translations[key]?.en) {
+      return translations[key].en;
+    }
+    // Return key if no translation exists
+    return key;
   };
 
   return (
@@ -565,7 +371,8 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   );
 };
 
-export const useLanguage = (): LanguageContextType => {
+// Hook for using the language context
+export const useLanguage = () => {
   const context = useContext(LanguageContext);
   if (context === undefined) {
     throw new Error('useLanguage must be used within a LanguageProvider');
@@ -573,5 +380,10 @@ export const useLanguage = (): LanguageContextType => {
   return context;
 };
 
-// Export useTranslation as an alias for useLanguage for better semantic meaning
-export const useTranslation = useLanguage;
+// Alternate hook that focuses only on translations
+export const useTranslation = () => {
+  const { language, t } = useContext(LanguageContext);
+  return { language, t };
+};
+
+export default LanguageContext;
