@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Calendar, Clock, ExternalLink, Search, Share2, Bookmark } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase, tables } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 
 interface NewsArticle {
@@ -52,15 +52,16 @@ const News = () => {
   const fetchArticles = async () => {
     try {
       setLoading(true);
+      // Using the tables constant for type safety
       const { data, error } = await supabase
-        .from('news_articles')
+        .from(tables.newsArticles)
         .select('*')
         .order('published_at', { ascending: false });
 
       if (error) throw error;
       
       if (data) {
-        setArticles(data as NewsArticle[]);
+        setArticles(data as unknown as NewsArticle[]);
       }
     } catch (error) {
       console.error('Error fetching articles:', error);
@@ -74,10 +75,10 @@ const News = () => {
     
     try {
       const { data, error } = await supabase
-        .from('saved_articles')
+        .from(tables.savedArticles)
         .select(`
           *,
-          article:news_articles(*)
+          article:${tables.newsArticles}(*)
         `)
         .eq('user_id', user.id);
 
@@ -103,8 +104,11 @@ const News = () => {
 
     try {
       const { error } = await supabase
-        .from('saved_articles')
-        .insert({ user_id: user.id, article_id: articleId });
+        .from(tables.savedArticles)
+        .insert({ 
+          user_id: user.id, 
+          article_id: articleId 
+        });
 
       if (error) throw error;
       
@@ -129,7 +133,7 @@ const News = () => {
 
     try {
       const { error } = await supabase
-        .from('saved_articles')
+        .from(tables.savedArticles)
         .delete()
         .eq('user_id', user.id)
         .eq('article_id', articleId);
