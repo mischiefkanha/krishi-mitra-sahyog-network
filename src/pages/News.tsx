@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import Layout from '@/components/layout/Layout';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,10 +6,11 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Calendar, Clock, ExternalLink, Search, Share2, Bookmark } from 'lucide-react';
+import { Calendar, ExternalLink, Search, Share2, Bookmark } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
+import { Database } from '@/integrations/supabase/types';
 
 interface NewsArticle {
   id: string;
@@ -52,16 +52,15 @@ const News = () => {
   const fetchArticles = async () => {
     try {
       setLoading(true);
-      // Use direct string for table name to avoid TypeScript errors
       const { data, error } = await supabase
         .from('news_articles')
         .select('*')
-        .order('published_at', { ascending: false });
+        .order('published_at', { ascending: false }) as { data: NewsArticle[] | null; error: Error | null };
 
       if (error) throw error;
       
       if (data) {
-        setArticles(data as unknown as NewsArticle[]);
+        setArticles(data);
       }
     } catch (error) {
       console.error('Error fetching articles:', error);
@@ -74,19 +73,18 @@ const News = () => {
     if (!user) return;
     
     try {
-      // Use direct string for table name to avoid TypeScript errors
       const { data, error } = await supabase
         .from('saved_articles')
         .select(`
           *,
           article:news_articles(*)
         `)
-        .eq('user_id', user.id);
+        .eq('user_id', user.id) as { data: SavedArticle[] | null; error: Error | null };
 
       if (error) throw error;
       
       if (data) {
-        setSavedArticles(data as unknown as SavedArticle[]);
+        setSavedArticles(data);
       }
     } catch (error) {
       console.error('Error fetching saved articles:', error);
@@ -104,13 +102,12 @@ const News = () => {
     }
 
     try {
-      // Use direct string for table name to avoid TypeScript errors
       const { error } = await supabase
         .from('saved_articles')
-        .insert({ 
-          user_id: user.id, 
-          article_id: articleId 
-        } as any); // Use type assertion to bypass TypeScript check
+        .insert({
+          user_id: user.id,
+          article_id: articleId
+        }) as { error: Error | null };
 
       if (error) throw error;
       
@@ -119,7 +116,6 @@ const News = () => {
         description: "This article has been saved to your bookmarks",
       });
       
-      // Refresh saved articles
       fetchSavedArticles();
     } catch (error: any) {
       toast({
@@ -134,7 +130,6 @@ const News = () => {
     if (!user) return;
 
     try {
-      // Use direct string for table name to avoid TypeScript errors
       const { error } = await supabase
         .from('saved_articles')
         .delete()
@@ -148,7 +143,6 @@ const News = () => {
         description: "This article has been removed from your bookmarks",
       });
       
-      // Refresh saved articles
       fetchSavedArticles();
     } catch (error: any) {
       toast({
@@ -175,7 +169,6 @@ const News = () => {
         });
       }).catch(console.error);
     } else {
-      // Fallback for browsers that don't support the Web Share API
       navigator.clipboard.writeText(url);
       toast({
         title: "Link Copied",
@@ -229,7 +222,6 @@ const News = () => {
             <TabsContent value={activeCategory}>
               <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                 {loading ? (
-                  // Loading skeletons
                   Array.from({ length: 6 }).map((_, i) => (
                     <Card key={i} className="overflow-hidden">
                       <div className="aspect-video w-full">
