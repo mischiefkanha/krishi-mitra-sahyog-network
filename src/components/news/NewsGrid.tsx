@@ -58,7 +58,7 @@ export const NewsGrid = ({
 };
 
 const LoadingSkeleton = () => (
-  <div className="overflow-hidden">
+  <div className="overflow-hidden rounded-lg border shadow-sm">
     <div className="aspect-video w-full">
       <Skeleton className="h-full w-full" />
     </div>
@@ -66,7 +66,10 @@ const LoadingSkeleton = () => (
       <Skeleton className="h-4 w-full mb-2" />
       <Skeleton className="h-4 w-3/4 mb-4" />
       <Skeleton className="h-20 w-full mb-4" />
-      <Skeleton className="h-9 w-full" />
+      <div className="flex justify-between">
+        <Skeleton className="h-9 w-24" />
+        <Skeleton className="h-9 w-24" />
+      </div>
     </div>
   </div>
 );
