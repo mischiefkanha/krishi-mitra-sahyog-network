@@ -34,31 +34,35 @@ export const NewsGrid = ({
 
   if (articles.length === 0) {
     return (
-      <div className="col-span-full text-center py-8">
-        <p className="text-gray-500">No articles found matching your criteria</p>
+      <div className="col-span-full text-center py-12 px-4 rounded-lg bg-primary/5 border border-primary/10">
+        <p className="text-muted-foreground">No articles found matching your criteria</p>
       </div>
     );
   }
 
   return (
     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-      {articles.map((article) => (
-        <NewsCard
+      {articles.map((article, index) => (
+        <div 
           key={article.id}
-          article={article}
-          isArticleSaved={isArticleSaved(article.id)}
-          onSaveArticle={onSaveArticle}
-          onRemoveArticle={onRemoveArticle}
-          onShareArticle={onShareArticle}
-          formatDate={formatDate}
-        />
+          style={{ animationDelay: `${index * 100}ms` }}
+        >
+          <NewsCard
+            article={article}
+            isArticleSaved={isArticleSaved(article.id)}
+            onSaveArticle={onSaveArticle}
+            onRemoveArticle={onRemoveArticle}
+            onShareArticle={onShareArticle}
+            formatDate={formatDate}
+          />
+        </div>
       ))}
     </div>
   );
 };
 
 const LoadingSkeleton = () => (
-  <div className="overflow-hidden rounded-lg border shadow-sm">
+  <div className="overflow-hidden rounded-xl border border-primary/10 shadow-lg dark:shadow-primary-900/10 bg-card animate-pulse">
     <div className="aspect-video w-full">
       <Skeleton className="h-full w-full" />
     </div>

@@ -33,15 +33,15 @@ export class ErrorBoundary extends React.Component<Props, State> {
   render() {
     if (this.state.hasError) {
       return (
-        <Alert variant="destructive" className="my-4">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertTitle>Something went wrong</AlertTitle>
-          <AlertDescription>
+        <Alert variant="destructive" className="my-4 animate-fade-in border-red-500/20">
+          <AlertTriangle className="h-5 w-5" />
+          <AlertTitle className="text-lg font-semibold">Something went wrong</AlertTitle>
+          <AlertDescription className="text-base">
             {this.state.error?.message || 'An unexpected error occurred'}
           </AlertDescription>
           <Button 
             variant="outline" 
-            className="mt-4"
+            className="mt-4 border-red-500/20 hover:bg-red-500/10"
             onClick={this.handleReset}
           >
             Try again

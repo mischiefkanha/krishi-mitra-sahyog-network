@@ -91,7 +91,7 @@ const Sidebar = () => {
         <Link to="/" className="flex items-center gap-2">
           <img src="/logo.svg" alt="KrishiMitra Logo" className="h-8 w-8" />
           <span className="text-xl font-bold">
-            <span className="text-primary-700">Krishi</span>
+            <span className="text-primary-500">Krishi</span>
             <span className="text-primary-900 dark:text-white">Mitra</span>
           </span>
         </Link>
@@ -99,7 +99,7 @@ const Sidebar = () => {
 
       {/* Desktop Sidebar */}
       <div 
-        className={`hidden md:flex flex-col h-screen ${isCollapsed ? 'w-20' : 'w-64'} bg-white dark:bg-gray-900 border-r border-border fixed left-0 top-0 transition-all duration-300 z-40`}
+        className={`hidden md:flex flex-col h-screen ${isCollapsed ? 'w-20' : 'w-64'} bg-sidebar border-r border-border fixed left-0 top-0 transition-all duration-300 z-40`}
       >
         {/* Sidebar Header */}
         <div className="p-4 flex items-center justify-between border-b border-border">
@@ -107,7 +107,7 @@ const Sidebar = () => {
             <Link to="/" className="flex items-center gap-2">
               <img src="/logo.svg" alt="KrishiMitra Logo" className="h-8 w-8" />
               <span className="text-xl font-bold">
-                <span className="text-primary-700">Krishi</span>
+                <span className="text-primary-500">Krishi</span>
                 <span className="text-primary-900 dark:text-white">Mitra</span>
               </span>
             </Link>
@@ -119,7 +119,7 @@ const Sidebar = () => {
           )}
           <button
             onClick={() => setIsCollapsed(!isCollapsed)}
-            className="p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800"
+            className="p-1 rounded-md hover:bg-accent/10"
             aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
             <svg 
@@ -145,17 +145,20 @@ const Sidebar = () => {
                 <li key={item.path}>
                   <Link
                     to={item.path}
-                    className={`flex items-center p-2 rounded-md transition-colors ${
+                    className={`flex items-center p-2 rounded-lg transition-colors ${
                       isActive(item.path)
-                        ? 'bg-primary-50 text-primary-700 dark:bg-gray-800 dark:text-primary-400'
-                        : 'hover:bg-gray-100 dark:hover:bg-gray-800'
-                    }`}
+                        ? 'bg-primary/10 text-primary dark:text-accent'
+                        : 'hover:bg-accent/10'
+                    } group`}
                   >
                     <item.icon 
-                      className={`h-5 w-5 ${isActive(item.path) ? 'text-primary-700 dark:text-primary-400' : ''}`} 
+                      className={`h-5 w-5 ${isActive(item.path) ? 'text-primary dark:text-accent' : ''} transition-transform group-hover:scale-110`} 
                       aria-hidden="true" 
                     />
                     {!isCollapsed && <span className="ml-3">{item.label}</span>}
+                    {isActive(item.path) && (
+                      <span className="absolute inset-y-0 left-0 w-1 bg-primary dark:bg-accent rounded-r-md"></span>
+                    )}
                   </Link>
                 </li>
               )
@@ -165,7 +168,7 @@ const Sidebar = () => {
           {/* Secondary Navigation Section */}
           {!isCollapsed && (
             <div className="pt-4 px-3">
-              <h3 className="px-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+              <h3 className="px-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                 {language === 'en' ? 'Resources & Community' : 'संसाधने आणि समुदाय'}
               </h3>
             </div>
@@ -176,17 +179,20 @@ const Sidebar = () => {
                 <li key={item.path}>
                   <Link
                     to={item.path}
-                    className={`flex items-center p-2 rounded-md transition-colors ${
+                    className={`flex items-center p-2 rounded-lg transition-colors ${
                       isActive(item.path)
-                        ? 'bg-primary-50 text-primary-700 dark:bg-gray-800 dark:text-primary-400'
-                        : 'hover:bg-gray-100 dark:hover:bg-gray-800'
-                    }`}
+                        ? 'bg-primary/10 text-primary dark:text-accent'
+                        : 'hover:bg-accent/10'
+                    } group`}
                   >
                     <item.icon 
-                      className={`h-5 w-5 ${isActive(item.path) ? 'text-primary-700 dark:text-primary-400' : ''}`} 
+                      className={`h-5 w-5 ${isActive(item.path) ? 'text-primary dark:text-accent' : ''} transition-transform group-hover:scale-110`} 
                       aria-hidden="true" 
                     />
                     {!isCollapsed && <span className="ml-3">{item.label}</span>}
+                    {isActive(item.path) && (
+                      <span className="absolute inset-y-0 left-0 w-1 bg-primary dark:bg-accent rounded-r-md"></span>
+                    )}
                   </Link>
                 </li>
               )
@@ -196,7 +202,7 @@ const Sidebar = () => {
           {/* User Settings Section */}
           {!isCollapsed && (
             <div className="pt-4 px-3">
-              <h3 className="px-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+              <h3 className="px-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                 {language === 'en' ? 'User' : 'वापरकर्ता'}
               </h3>
             </div>
@@ -207,17 +213,20 @@ const Sidebar = () => {
                 <li key={item.path}>
                   <Link
                     to={item.path}
-                    className={`flex items-center p-2 rounded-md transition-colors ${
+                    className={`flex items-center p-2 rounded-lg transition-colors ${
                       isActive(item.path)
-                        ? 'bg-primary-50 text-primary-700 dark:bg-gray-800 dark:text-primary-400'
-                        : 'hover:bg-gray-100 dark:hover:bg-gray-800'
-                    }`}
+                        ? 'bg-primary/10 text-primary dark:text-accent'
+                        : 'hover:bg-accent/10'
+                    } group`}
                   >
                     <item.icon 
-                      className={`h-5 w-5 ${isActive(item.path) ? 'text-primary-700 dark:text-primary-400' : ''}`} 
+                      className={`h-5 w-5 ${isActive(item.path) ? 'text-primary dark:text-accent' : ''} transition-transform group-hover:scale-110`} 
                       aria-hidden="true" 
                     />
                     {!isCollapsed && <span className="ml-3">{item.label}</span>}
+                    {isActive(item.path) && (
+                      <span className="absolute inset-y-0 left-0 w-1 bg-primary dark:bg-accent rounded-r-md"></span>
+                    )}
                   </Link>
                 </li>
               )
@@ -227,17 +236,20 @@ const Sidebar = () => {
               <li>
                 <Link
                   to="/settings"
-                  className={`flex items-center p-2 rounded-md transition-colors ${
+                  className={`flex items-center p-2 rounded-lg transition-colors ${
                     isActive('/settings')
-                      ? 'bg-primary-50 text-primary-700 dark:bg-gray-800 dark:text-primary-400'
-                      : 'hover:bg-gray-100 dark:hover:bg-gray-800'
-                  }`}
+                      ? 'bg-primary/10 text-primary dark:text-accent'
+                      : 'hover:bg-accent/10'
+                  } group`}
                 >
                   <Settings 
-                    className={`h-5 w-5 ${isActive('/settings') ? 'text-primary-700 dark:text-primary-400' : ''}`} 
+                    className={`h-5 w-5 ${isActive('/settings') ? 'text-primary dark:text-accent' : ''} transition-transform group-hover:scale-110`} 
                     aria-hidden="true" 
                   />
                   <span className="ml-3">{language === 'en' ? 'Settings' : 'सेटिंग्ज'}</span>
+                  {isActive('/settings') && (
+                    <span className="absolute inset-y-0 left-0 w-1 bg-primary dark:bg-accent rounded-r-md"></span>
+                  )}
                 </Link>
               </li>
             )}
@@ -248,37 +260,37 @@ const Sidebar = () => {
         <div className="p-4 border-t border-border">
           <div className="flex items-center justify-between mb-4">
             {!isCollapsed && (
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              <span className="text-sm font-medium">
                 {theme === 'dark' ? 'Dark Mode' : 'Light Mode'}
               </span>
             )}
             <div className="flex items-center space-x-2">
-              <Sun className={`h-4 w-4 ${theme === 'light' ? 'text-yellow-500' : 'text-gray-400'}`} />
+              <Sun className={`h-4 w-4 ${theme === 'light' ? 'text-primary' : 'text-gray-400'}`} />
               <Switch 
                 checked={theme === 'dark'} 
                 onCheckedChange={toggleTheme}
                 aria-label="Toggle theme"
               />
-              <Moon className={`h-4 w-4 ${theme === 'dark' ? 'text-blue-400' : 'text-gray-400'}`} />
+              <Moon className={`h-4 w-4 ${theme === 'dark' ? 'text-accent' : 'text-gray-400'}`} />
             </div>
           </div>
           
           {!isCollapsed && (
             <div className="flex items-center justify-between mb-4">
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Language</span>
+              <span className="text-sm font-medium">Language</span>
               <div className="flex items-center space-x-2">
                 <Button 
                   variant="outline" 
                   size="sm" 
                   onClick={() => setLanguage('en')} 
-                  className={`px-2 py-1 text-xs ${language === 'en' ? 'bg-primary-50 text-primary-700 dark:bg-gray-800 dark:text-primary-400' : ''}`}>
+                  className={`px-2 py-1 text-xs ${language === 'en' ? 'bg-primary/10 text-primary dark:text-accent' : ''}`}>
                   English
                 </Button>
                 <Button 
                   variant="outline" 
                   size="sm" 
                   onClick={() => setLanguage('mr')} 
-                  className={`px-2 py-1 text-xs ${language === 'mr' ? 'bg-primary-50 text-primary-700 dark:bg-gray-800 dark:text-primary-400' : ''}`}>
+                  className={`px-2 py-1 text-xs ${language === 'mr' ? 'bg-primary/10 text-primary dark:text-accent' : ''}`}>
                   मराठी
                 </Button>
               </div>
@@ -315,13 +327,13 @@ const Sidebar = () => {
       
       {/* Mobile Sidebar (Slide-in) */}
       <div className={`md:hidden fixed inset-0 z-30 ${isMobileMenuOpen ? 'block' : 'hidden'}`}>
-        <div className="absolute inset-0 bg-black/50" onClick={() => setIsMobileMenuOpen(false)}></div>
-        <div className="absolute left-0 top-0 h-full w-64 bg-white dark:bg-gray-900 shadow-lg transform transition-transform duration-300">
+        <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setIsMobileMenuOpen(false)}></div>
+        <div className="absolute left-0 top-0 h-full w-64 bg-sidebar shadow-lg transform transition-transform duration-300 animate-slide-in">
           <div className="p-4 border-b border-border">
             <Link to="/" className="flex items-center gap-2">
               <img src="/logo.svg" alt="KrishiMitra Logo" className="h-8 w-8" />
               <span className="text-xl font-bold">
-                <span className="text-primary-700">Krishi</span>
+                <span className="text-primary-500">Krishi</span>
                 <span className="text-primary-900 dark:text-white">Mitra</span>
               </span>
             </Link>
@@ -331,7 +343,7 @@ const Sidebar = () => {
             {/* Main navigation */}
             <div className="pt-2">
               <div className="px-4 py-2">
-                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                   {language === 'en' ? 'Main Menu' : 'मुख्य मेनू'}
                 </h3>
               </div>
@@ -341,17 +353,20 @@ const Sidebar = () => {
                     <li key={item.path}>
                       <Link
                         to={item.path}
-                        className={`flex items-center p-2 rounded-md transition-colors ${
+                        className={`flex items-center p-2 rounded-lg transition-colors ${
                           isActive(item.path)
-                            ? 'bg-primary-50 text-primary-700 dark:bg-gray-800 dark:text-primary-400'
-                            : 'hover:bg-gray-100 dark:hover:bg-gray-800'
-                        }`}
+                            ? 'bg-primary/10 text-primary dark:text-accent'
+                            : 'hover:bg-accent/10'
+                        } group`}
                         onClick={() => setIsMobileMenuOpen(false)}
                       >
                         <item.icon 
-                          className={`h-5 w-5 ${isActive(item.path) ? 'text-primary-700 dark:text-primary-400' : ''}`} 
+                          className={`h-5 w-5 ${isActive(item.path) ? 'text-primary dark:text-accent' : ''} transition-transform group-hover:scale-110`} 
                         />
                         <span className="ml-3">{item.label}</span>
+                        {isActive(item.path) && (
+                          <span className="absolute inset-y-0 left-0 w-1 bg-primary dark:bg-accent rounded-r-md"></span>
+                        )}
                       </Link>
                     </li>
                   )
@@ -362,7 +377,7 @@ const Sidebar = () => {
             {/* Resources & Community */}
             <div className="pt-4">
               <div className="px-4 py-2">
-                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                   {language === 'en' ? 'Resources & Community' : 'संसाधने आणि समुदाय'}
                 </h3>
               </div>
@@ -372,17 +387,20 @@ const Sidebar = () => {
                     <li key={item.path}>
                       <Link
                         to={item.path}
-                        className={`flex items-center p-2 rounded-md transition-colors ${
+                        className={`flex items-center p-2 rounded-lg transition-colors ${
                           isActive(item.path)
-                            ? 'bg-primary-50 text-primary-700 dark:bg-gray-800 dark:text-primary-400'
-                            : 'hover:bg-gray-100 dark:hover:bg-gray-800'
-                        }`}
+                            ? 'bg-primary/10 text-primary dark:text-accent'
+                            : 'hover:bg-accent/10'
+                        } group`}
                         onClick={() => setIsMobileMenuOpen(false)}
                       >
                         <item.icon 
-                          className={`h-5 w-5 ${isActive(item.path) ? 'text-primary-700 dark:text-primary-400' : ''}`} 
+                          className={`h-5 w-5 ${isActive(item.path) ? 'text-primary dark:text-accent' : ''} transition-transform group-hover:scale-110`} 
                         />
                         <span className="ml-3">{item.label}</span>
+                        {isActive(item.path) && (
+                          <span className="absolute inset-y-0 left-0 w-1 bg-primary dark:bg-accent rounded-r-md"></span>
+                        )}
                       </Link>
                     </li>
                   )
@@ -393,7 +411,7 @@ const Sidebar = () => {
             {/* User Section */}
             <div className="pt-4">
               <div className="px-4 py-2">
-                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                   {language === 'en' ? 'User' : 'वापरकर्ता'}
                 </h3>
               </div>
@@ -403,17 +421,20 @@ const Sidebar = () => {
                     <li key={item.path}>
                       <Link
                         to={item.path}
-                        className={`flex items-center p-2 rounded-md transition-colors ${
+                        className={`flex items-center p-2 rounded-lg transition-colors ${
                           isActive(item.path)
-                            ? 'bg-primary-50 text-primary-700 dark:bg-gray-800 dark:text-primary-400'
-                            : 'hover:bg-gray-100 dark:hover:bg-gray-800'
-                        }`}
+                            ? 'bg-primary/10 text-primary dark:text-accent'
+                            : 'hover:bg-accent/10'
+                        } group`}
                         onClick={() => setIsMobileMenuOpen(false)}
                       >
                         <item.icon 
-                          className={`h-5 w-5 ${isActive(item.path) ? 'text-primary-700 dark:text-primary-400' : ''}`} 
+                          className={`h-5 w-5 ${isActive(item.path) ? 'text-primary dark:text-accent' : ''} transition-transform group-hover:scale-110`} 
                         />
                         <span className="ml-3">{item.label}</span>
+                        {isActive(item.path) && (
+                          <span className="absolute inset-y-0 left-0 w-1 bg-primary dark:bg-accent rounded-r-md"></span>
+                        )}
                       </Link>
                     </li>
                   )
@@ -423,17 +444,20 @@ const Sidebar = () => {
                   <li>
                     <Link
                       to="/settings"
-                      className={`flex items-center p-2 rounded-md transition-colors ${
+                      className={`flex items-center p-2 rounded-lg transition-colors ${
                         isActive('/settings')
-                          ? 'bg-primary-50 text-primary-700 dark:bg-gray-800 dark:text-primary-400'
-                          : 'hover:bg-gray-100 dark:hover:bg-gray-800'
-                      }`}
+                          ? 'bg-primary/10 text-primary dark:text-accent'
+                          : 'hover:bg-accent/10'
+                      } group`}
                       onClick={() => setIsMobileMenuOpen(false)}
                     >
                       <Settings 
-                        className={`h-5 w-5 ${isActive('/settings') ? 'text-primary-700 dark:text-primary-400' : ''}`} 
+                        className={`h-5 w-5 ${isActive('/settings') ? 'text-primary dark:text-accent' : ''} transition-transform group-hover:scale-110`} 
                       />
                       <span className="ml-3">{language === 'en' ? 'Settings' : 'सेटिंग्ज'}</span>
+                      {isActive('/settings') && (
+                        <span className="absolute inset-y-0 left-0 w-1 bg-primary dark:bg-accent rounded-r-md"></span>
+                      )}
                     </Link>
                   </li>
                 )}
@@ -443,35 +467,35 @@ const Sidebar = () => {
           
           <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-border">
             <div className="flex items-center justify-between mb-4">
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              <span className="text-sm font-medium">
                 {theme === 'dark' ? 'Dark Mode' : 'Light Mode'}
               </span>
               <div className="flex items-center space-x-2">
-                <Sun className={`h-4 w-4 ${theme === 'light' ? 'text-yellow-500' : 'text-gray-400'}`} />
+                <Sun className={`h-4 w-4 ${theme === 'light' ? 'text-primary' : 'text-gray-400'}`} />
                 <Switch 
                   checked={theme === 'dark'} 
                   onCheckedChange={toggleTheme}
                   aria-label="Toggle theme"
                 />
-                <Moon className={`h-4 w-4 ${theme === 'dark' ? 'text-blue-400' : 'text-gray-400'}`} />
+                <Moon className={`h-4 w-4 ${theme === 'dark' ? 'text-accent' : 'text-gray-400'}`} />
               </div>
             </div>
             
             <div className="flex items-center justify-between mb-4">
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Language</span>
+              <span className="text-sm font-medium">Language</span>
               <div className="flex items-center space-x-2">
                 <Button 
                   variant="outline" 
                   size="sm" 
                   onClick={() => setLanguage('en')} 
-                  className={`px-2 py-1 text-xs ${language === 'en' ? 'bg-primary-50 text-primary-700 dark:bg-gray-800 dark:text-primary-400' : ''}`}>
+                  className={`px-2 py-1 text-xs ${language === 'en' ? 'bg-primary/10 text-primary dark:text-accent' : ''}`}>
                   English
                 </Button>
                 <Button 
                   variant="outline" 
                   size="sm" 
                   onClick={() => setLanguage('mr')} 
-                  className={`px-2 py-1 text-xs ${language === 'mr' ? 'bg-primary-50 text-primary-700 dark:bg-gray-800 dark:text-primary-400' : ''}`}>
+                  className={`px-2 py-1 text-xs ${language === 'mr' ? 'bg-primary/10 text-primary dark:text-accent' : ''}`}>
                   मराठी
                 </Button>
               </div>

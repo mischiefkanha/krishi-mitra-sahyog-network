@@ -25,7 +25,7 @@ const News = () => {
   return (
     <Layout>
       <div className="container mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold mb-6">Agricultural News & Updates</h1>
+        <h1 className="text-3xl font-bold mb-6 text-foreground">Agricultural News & Updates</h1>
         
         <ErrorBoundary>
           <div className="mb-8">

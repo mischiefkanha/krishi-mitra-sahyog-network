@@ -11,7 +11,7 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // Initialize theme from localStorage or system preference
+  // Initialize theme from localStorage or system preference with dark as the default
   const [theme, setTheme] = useState<Theme>(() => {
     // Check if we're running in a browser environment
     if (typeof window !== 'undefined') {
@@ -27,8 +27,8 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       }
     }
     
-    // Default to light mode
-    return 'light';
+    // Default to dark mode as requested
+    return 'dark';
   });
 
   // Apply theme to document
