@@ -7,4 +7,5 @@ const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiO
 
 export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 
-export { Database } from './types';
+// Change 'export { Database }' to 'export type { Database }' to fix the TS1205 error
+export type { Database } from './types';
