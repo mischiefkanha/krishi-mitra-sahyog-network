@@ -18,13 +18,13 @@ const Index = () => {
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
             <div>
-              <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
+              <h1 className="text-4xl md:text-5xl font-bold text-white mb-6">
                 {language === 'en' 
                   ? 'Growing Better Futures for Indian Farmers'
                   : 'भारतीय शेतकऱ्यांसाठी उज्ज्वल भविष्य निर्माण'
                 }
               </h1>
-              <p className="text-xl text-gray-700 mb-8">
+              <p className="text-xl text-white/90 mb-8">
                 {language === 'en'
                   ? 'KrishiMitra helps farmers make data-driven decisions, detect crop diseases early, and sell directly to buyers for better profits.'
                   : 'कृषिमित्र शेतकऱ्यांना डेटा-आधारित निर्णय घेण्यास, पिकांचे रोग लवकर शोधण्यास आणि अधिक नफ्यासाठी थेट खरेदीदारांना विक्री करण्यास मदत करते.'
@@ -365,3 +365,4 @@ const Index = () => {
 };
 
 export default Index;
+
