@@ -23,7 +23,7 @@ export const NewsCard = ({
   formatDate 
 }: NewsCardProps) => {
   return (
-    <Card key={article.id} className="overflow-hidden flex flex-col h-full hover-scale shadow-lg dark:shadow-primary-900/10 animate-fade-in border-primary/10">
+    <Card key={article.id} className="overflow-hidden flex flex-col h-full hover-scale shadow-lg dark:shadow-primary-900/10 border-primary/10">
       <div className="aspect-video w-full overflow-hidden">
         <img
           src={article.image_url || '/placeholder.svg'}

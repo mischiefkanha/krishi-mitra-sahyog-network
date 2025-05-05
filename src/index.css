@@ -190,8 +190,9 @@
     @apply transition-transform hover:scale-105;
   }
   
+  /* Fix: Removed circular dependency by removing @apply animate-fade-in */
   .animate-fade-in {
-    @apply opacity-0 animate-fade-in;
+    animation: fadeIn 0.5s ease-in;
   }
 }
 

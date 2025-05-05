@@ -45,6 +45,7 @@ export const NewsGrid = ({
       {articles.map((article, index) => (
         <div 
           key={article.id}
+          className="fade-in"
           style={{ animationDelay: `${index * 100}ms` }}
         >
           <NewsCard
