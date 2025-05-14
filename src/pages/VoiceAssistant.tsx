@@ -1,233 +1,480 @@
-import { useTranslation } from "@/context/LanguageContext";
-import { useTheme } from "@/context/ThemeContext";
-import Layout from "@/components/layout/Layout";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Mic, MicOff, Volume2, Loader2, HelpCircle } from "lucide-react";
-import { useState } from "react";
 
-const VoiceAssistantPage = () => {
-  const { language } = useTranslation();
-  const { theme } = useTheme();
+import { useState, useEffect, useRef } from 'react';
+import Layout from '@/components/layout/Layout';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Textarea } from '@/components/ui/textarea';
+import { useToast } from '@/components/ui/use-toast';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { supabase } from '@/integrations/supabase/client';
+import { useLanguage, useTranslation } from '@/context/LanguageContext';
+import { useAuth } from '@/context/AuthContext';
+import { Mic, MicOff, Send, Bot, User2, VolumeX, Volume2, MessageSquare, VolumeUp, Copy, Loader2 } from 'lucide-react';
+
+// Message interface
+interface ChatMessage {
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp: Date;
+}
+
+type LanguageCode = 'en' | 'mr' | 'hi';
+
+const VoiceAssistant = () => {
+  const [messages, setMessages] = useState<ChatMessage[]>([
+    {
+      role: 'assistant',
+      content: 'नमस्कार! मी कृषिमित्र सहाय्यक आहे. आपल्याला शेती संबंधित कोणत्याही प्रश्नांची उत्तरे देण्यास मला आनंद होईल. कृपया आपला प्रश्न विचारा.',
+      timestamp: new Date()
+    }
+  ]);
+  const [inputMessage, setInputMessage] = useState('');
   const [isListening, setIsListening] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [transcript, setTranscript] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [activeTab, setActiveTab] = useState<'text' | 'voice'>('text');
+  const [preferredLanguage, setPreferredLanguage] = useState<LanguageCode>('mr');
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const { toast } = useToast();
+  const { language, setLanguage } = useLanguage();
+  const { user } = useAuth();
 
-  const getTranslation = (en: string, mr: string) => {
-    return language === 'en' ? en : mr;
+  // Automatically scroll to the bottom of the chat
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  // Update language context when preferred language changes
+  useEffect(() => {
+    setLanguage(preferredLanguage);
+  }, [preferredLanguage, setLanguage]);
+
+  // Function to send message to AI assistant
+  const sendMessage = async () => {
+    if (!inputMessage.trim()) return;
+    
+    // Add user message to chat
+    const userMessage: ChatMessage = {
+      role: 'user',
+      content: inputMessage,
+      timestamp: new Date()
+    };
+    
+    setMessages(prev => [...prev, userMessage]);
+    setInputMessage('');
+    setIsLoading(true);
+    
+    try {
+      // Call the AI chat function
+      const { data, error } = await supabase.functions.invoke('ai-chat', {
+        body: { message: inputMessage }
+      });
+      
+      if (error) throw error;
+      
+      // Add assistant message to chat
+      const assistantMessage: ChatMessage = {
+        role: 'assistant',
+        content: data.response,
+        timestamp: new Date()
+      };
+      
+      setMessages(prev => [...prev, assistantMessage]);
+      
+      // If auto-speak is enabled, speak the response
+      if (isSpeaking) {
+        speakMessage(data.response);
+      }
+      
+      // Store chat history if user is logged in
+      if (user) {
+        try {
+          await supabase.from('chat_history').insert({
+            user_id: user.id,
+            user_message: inputMessage,
+            ai_response: data.response
+          });
+        } catch (error) {
+          console.error('Error storing chat history:', error);
+        }
+      }
+      
+    } catch (error: any) {
+      console.error('Error sending message:', error);
+      toast({
+        title: "Error",
+        description: "Failed to send message. Please try again.",
+        variant: "destructive"
+      });
+      
+      // Add error message from assistant
+      setMessages(prev => [
+        ...prev, 
+        {
+          role: 'assistant',
+          content: "Sorry, I'm having trouble connecting right now. Please try again in a moment.",
+          timestamp: new Date()
+        }
+      ]);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const toggleListening = () => {
-    if (isListening) {
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  };
+
+  const startVoiceInput = () => {
+    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+      toast({
+        title: "Voice input not supported",
+        description: "Your browser doesn't support voice input. Please use a modern browser.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsListening(true);
+
+    // @ts-ignore
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const recognition = new SpeechRecognition();
+    
+    // Set language based on preference
+    recognition.lang = preferredLanguage === 'en' ? 'en-US' : 
+                      preferredLanguage === 'hi' ? 'hi-IN' : 'mr-IN';
+    
+    recognition.interimResults = false;
+    
+    recognition.start();
+
+    recognition.onresult = (event: any) => {
+      const transcript = event.results[0][0].transcript;
+      setInputMessage(transcript);
+      
+      // In voice tab, automatically send the message
+      if (activeTab === 'voice') {
+        setTimeout(() => {
+          setInputMessage(transcript);
+          sendMessage();
+        }, 500);
+      } else {
+        setInputMessage(transcript);
+      }
+      
       setIsListening(false);
-      // In a real implementation, we would stop the speech recognition here
-    } else {
-      setIsListening(true);
-      setIsProcessing(true);
-      // Simulate processing
-      setTimeout(() => {
-        setIsProcessing(false);
-        setTranscript(
-          getTranslation(
-            "How can I help you with your farming today?",
-            "आज मी तुमच्या शेतीमध्ये कशी मदत करू शकतो?"
-          )
-        );
-      }, 1500);
-    }
+    };
+
+    recognition.onerror = () => {
+      setIsListening(false);
+      toast({
+        title: "Voice input error",
+        description: "There was an error processing your voice input. Please try again.",
+        variant: "destructive"
+      });
+    };
+
+    recognition.onend = () => {
+      setIsListening(false);
+    };
   };
 
-  const handleSpeakResponse = () => {
-    // In a real implementation, this would use text-to-speech API
-    if ('speechSynthesis' in window && transcript) {
-      const speech = new SpeechSynthesisUtterance();
-      speech.text = transcript;
-      speech.lang = language === 'en' ? 'en-US' : 'mr-IN';
-      window.speechSynthesis.speak(speech);
+  const speakMessage = (text: string) => {
+    if (!('speechSynthesis' in window)) {
+      toast({
+        title: "Text-to-speech not supported",
+        description: "Your browser doesn't support text-to-speech. Please use a modern browser.",
+        variant: "destructive"
+      });
+      return;
     }
+
+    // Cancel any ongoing speech
+    window.speechSynthesis.cancel();
+
+    if (isSpeaking) {
+      setIsSpeaking(false);
+      return;
+    }
+
+    setIsSpeaking(true);
+
+    const speech = new SpeechSynthesisUtterance(text);
+    
+    // Set language based on preference
+    speech.lang = preferredLanguage === 'en' ? 'en-US' : 
+                  preferredLanguage === 'hi' ? 'hi-IN' : 'mr-IN';
+    
+    speech.onend = () => {
+      setIsSpeaking(false);
+    };
+
+    speech.onerror = () => {
+      setIsSpeaking(false);
+    };
+
+    window.speechSynthesis.speak(speech);
+  };
+
+  const copyMessageToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast({
+      title: "Copied to clipboard",
+      description: "Message has been copied to your clipboard.",
+    });
   };
 
   return (
     <Layout>
-      <div className="container py-12 mx-auto">
-        <div className="max-w-3xl mx-auto text-center">
-          <h1 className="text-3xl md:text-4xl font-bold mb-6">
-            {getTranslation('Voice Assistant', 'आवाज सहाय्यक')}
-          </h1>
-          <p className="text-gray-600 dark:text-gray-300 mb-12 max-w-2xl mx-auto">
-            {getTranslation(
-              'Use voice commands to navigate the app and get information about farming in your preferred language.', 
-              'आपल्या पसंतीच्या भाषेत अॅप नेव्हिगेट करण्यासाठी आणि शेतीविषयी माहिती मिळवण्यासाठी व्हॉइस कमांड वापरा.'
-            )}
-          </p>
+      <div className="container mx-auto px-4 py-8">
+        <Card className="min-h-[80vh] flex flex-col">
+          <CardHeader>
+            <CardTitle className="text-2xl font-bold text-primary-900 dark:text-primary-400">
+              KrishiMitra AI Assistant
+            </CardTitle>
+            <CardDescription>
+              Get instant farming advice and information through text or voice
+            </CardDescription>
+          </CardHeader>
           
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden border border-gray-100 dark:border-gray-700">
-            <div className={`p-10 ${isListening ? 'bg-primary-50 dark:bg-primary-900/30' : 'bg-gray-50 dark:bg-gray-900/50'}`}>
-              <div className="flex flex-col items-center">
-                <div 
-                  className={`relative inline-flex items-center justify-center w-32 h-32 rounded-full mb-6 transition-all
-                    ${isListening 
-                      ? 'bg-primary-100 dark:bg-primary-900/50 ring-4 ring-primary-200 dark:ring-primary-800' 
-                      : 'bg-gray-100 dark:bg-gray-800'}`}
-                >
-                  <button 
-                    onClick={toggleListening}
-                    className={`absolute inset-4 rounded-full flex items-center justify-center transition-all
-                      ${isListening 
-                        ? 'bg-primary-600 text-white pulsate'
-                        : 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200'}`}
-                    disabled={isProcessing}
-                  >
-                    {isProcessing ? (
-                      <Loader2 size={40} className="animate-spin text-primary-100" />
-                    ) : isListening ? (
-                      <MicOff size={40} />
-                    ) : (
-                      <Mic size={40} />
-                    )}
-                  </button>
-                </div>
-                <h2 className="text-xl md:text-2xl font-semibold mb-3">
-                  {isProcessing
-                    ? getTranslation('Listening...', 'ऐकत आहे...')
-                    : isListening
-                    ? getTranslation('Tap to stop', 'थांबवण्यासाठी टॅप करा')
-                    : getTranslation('Tap to speak', 'बोलण्यासाठी टॅप करा')}
-                </h2>
-                {!isListening && (
-                  <p className="text-sm text-gray-600 dark:text-gray-300">
-                    {getTranslation(
-                      'Press the microphone button and ask any farming related question',
-                      'मायक्रोफोन बटण दाबा आणि कोणताही शेतीशी संबंधित प्रश्न विचारा'
-                    )}
-                  </p>
-                )}
-              </div>
-            </div>
-            
-            {transcript && (
-              <div className="p-6">
-                <Card className="bg-primary-50 dark:bg-primary-900/30 border-none">
-                  <CardContent className="p-4 relative">
-                    <p className="text-lg">{transcript}</p>
-                    {transcript && (
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="absolute top-2 right-2"
-                        onClick={handleSpeakResponse}
+          <CardContent className="flex-grow flex flex-col">
+            <Tabs value={activeTab} onValueChange={(value: string) => setActiveTab(value as 'text' | 'voice')} className="flex-grow flex flex-col">
+              <TabsList className="grid w-full grid-cols-2 mb-4">
+                <TabsTrigger value="text" className="flex items-center gap-2">
+                  <MessageSquare className="h-4 w-4" />
+                  Text Chat
+                </TabsTrigger>
+                <TabsTrigger value="voice" className="flex items-center gap-2">
+                  <VolumeUp className="h-4 w-4" />
+                  Voice Assistant
+                </TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="text" className="flex-grow flex flex-col">
+                <div className="flex-grow overflow-y-auto mb-4 space-y-4 max-h-[60vh] min-h-[40vh]">
+                  {messages.map((msg, index) => (
+                    <div
+                      key={index}
+                      className={`flex ${
+                        msg.role === 'user' ? 'justify-end' : 'justify-start'
+                      }`}
+                    >
+                      <div
+                        className={`flex max-w-[80%] ${
+                          msg.role === 'user'
+                            ? 'flex-row-reverse items-end'
+                            : 'items-start'
+                        }`}
                       >
-                        <Volume2 size={16} />
+                        <Avatar className={`h-8 w-8 ${msg.role === 'user' ? 'ml-2' : 'mr-2'}`}>
+                          <AvatarFallback className={msg.role === 'user' ? 'bg-primary-200' : 'bg-green-200'}>
+                            {msg.role === 'user' ? <User2 className="h-4 w-4" /> : <Bot className="h-4 w-4" />}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div
+                          className={`rounded-lg p-3 ${
+                            msg.role === 'user'
+                              ? 'bg-primary-600 text-white'
+                              : 'bg-muted'
+                          }`}
+                        >
+                          <p className="whitespace-pre-wrap">{msg.content}</p>
+                          <div className="flex items-center justify-end mt-1 gap-1">
+                            {msg.role === 'assistant' && (
+                              <>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-5 w-5 rounded-full opacity-70 hover:opacity-100"
+                                  onClick={() => copyMessageToClipboard(msg.content)}
+                                >
+                                  <Copy className="h-3 w-3" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-5 w-5 rounded-full opacity-70 hover:opacity-100"
+                                  onClick={() => speakMessage(msg.content)}
+                                >
+                                  {isSpeaking ? (
+                                    <VolumeX className="h-3 w-3" />
+                                  ) : (
+                                    <Volume2 className="h-3 w-3" />
+                                  )}
+                                </Button>
+                              </>
+                            )}
+                            <span className="text-xs opacity-50">
+                              {msg.timestamp.toLocaleTimeString([], {
+                                hour: '2-digit',
+                                minute: '2-digit',
+                              })}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  <div ref={messagesEndRef} />
+                </div>
+                
+                <div className="mt-auto pt-4 border-t relative">
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      sendMessage();
+                    }}
+                    className="flex space-x-2"
+                  >
+                    <Textarea
+                      value={inputMessage}
+                      onChange={(e) => setInputMessage(e.target.value)}
+                      onKeyDown={handleKeyPress}
+                      placeholder="Type your message..."
+                      className="flex-grow resize-none"
+                      disabled={isLoading}
+                      rows={1}
+                    />
+                    <div className="flex flex-col space-y-2">
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="outline"
+                        onClick={startVoiceInput}
+                        disabled={isLoading || isListening}
+                      >
+                        {isListening ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Mic className="h-4 w-4" />
+                        )}
                       </Button>
-                    )}
-                  </CardContent>
-                </Card>
-              </div>
-            )}
-            
-            <div className="p-6 border-t border-gray-100 dark:border-gray-700">
-              <h3 className="font-medium mb-3 flex items-center gap-2">
-                <HelpCircle size={16} className="text-primary-600" />
-                {getTranslation('Try asking', 'विचारण्याचा प्रयत्न करा')}:
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <Button variant="outline" size="sm" className="justify-start">
-                  {getTranslation('"What crops are suitable for sandy soil?"', '"वाळूच्या मातीसाठी कोणती पिके योग्य आहेत?"')}
-                </Button>
-                <Button variant="outline" size="sm" className="justify-start">
-                  {getTranslation('"How to prevent tomato leaf diseases?"', '"टोमॅटोच्या पानांचे रोग कसे टाळावेत?"')}
-                </Button>
-                <Button variant="outline" size="sm" className="justify-start">
-                  {getTranslation('"Current market price of wheat"', '"गव्हाची सध्याची बाजार किंमत"')}
-                </Button>
-                <Button variant="outline" size="sm" className="justify-start">
-                  {getTranslation('"Weather forecast for next week"', '"पुढील आठवड्याचा हवामान अंदाज"')}
-                </Button>
-              </div>
-            </div>
-          </div>
-          
-          <div className="mt-12">
-            <h3 className="text-xl font-semibold mb-6">
-              {getTranslation('Enhanced Features Coming Soon', 'सुधारित वैशिष्ट्ये लवकरच येत आहेत')}
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <Card>
-                <CardContent className="p-6 text-center">
-                  <div className="h-12 w-12 bg-primary-100 dark:bg-primary-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary-600"><rect width="8" height="14" x="8" y="6" rx="4" /><path d="m19 7-3 3" /><path d="m19 17-3-3" /><line x1="5" x2="5" y1="7" y2="17" /></svg>
-                  </div>
-                  <h4 className="text-lg font-medium mb-2">
-                    {getTranslation('Voice Controls', 'आवाज नियंत्रणे')}
-                  </h4>
-                  <p className="text-sm text-gray-600 dark:text-gray-300">
-                    {getTranslation(
-                      'Navigate through the app using only voice commands',
-                      'केवळ व्हॉइस कमांड वापरून अॅप नेव्हिगेट करा'
-                    )}
-                  </p>
-                </CardContent>
-              </Card>
+                      <Button 
+                        type="submit" 
+                        size="icon" 
+                        disabled={isLoading || !inputMessage.trim()}
+                      >
+                        {isLoading ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Send className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </div>
+                  </form>
+                </div>
+              </TabsContent>
               
-              <Card>
-                <CardContent className="p-6 text-center">
-                  <div className="h-12 w-12 bg-primary-100 dark:bg-primary-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary-600"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" /><path d="M19 10v2a7 7 0 0 1-14 0v-2" /><line x1="12" x2="12" y1="19" y2="22" /></svg>
-                  </div>
-                  <h4 className="text-lg font-medium mb-2">
-                    {getTranslation('Multiple Languages', 'अनेक भाषा')}
-                  </h4>
-                  <p className="text-sm text-gray-600 dark:text-gray-300">
-                    {getTranslation(
-                      'Support for Hindi, Marathi, and other regional languages',
-                      'हिंदी, मराठी आणि इतर प्रादेशिक भाषांसाठी समर्थन'
+              <TabsContent value="voice" className="flex-grow flex flex-col">
+                <div className="flex-grow overflow-y-auto mb-4 space-y-4 max-h-[60vh] min-h-[40vh]">
+                  {messages.map((msg, index) => (
+                    <div
+                      key={index}
+                      className={`flex ${
+                        msg.role === 'user' ? 'justify-end' : 'justify-start'
+                      }`}
+                    >
+                      <div
+                        className={`flex max-w-[80%] ${
+                          msg.role === 'user'
+                            ? 'flex-row-reverse items-end'
+                            : 'items-start'
+                        }`}
+                      >
+                        <Avatar className={`h-8 w-8 ${msg.role === 'user' ? 'ml-2' : 'mr-2'}`}>
+                          <AvatarFallback className={msg.role === 'user' ? 'bg-primary-200' : 'bg-green-200'}>
+                            {msg.role === 'user' ? <User2 className="h-4 w-4" /> : <Bot className="h-4 w-4" />}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div
+                          className={`rounded-lg p-3 ${
+                            msg.role === 'user'
+                              ? 'bg-primary-600 text-white'
+                              : 'bg-muted'
+                          }`}
+                        >
+                          <p className="whitespace-pre-wrap">{msg.content}</p>
+                          <div className="flex items-center justify-end mt-1 gap-1">
+                            <span className="text-xs opacity-50">
+                              {msg.timestamp.toLocaleTimeString([], {
+                                hour: '2-digit',
+                                minute: '2-digit',
+                              })}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  <div ref={messagesEndRef} />
+                </div>
+                
+                <div className="flex flex-col items-center justify-center mt-auto pt-8 border-t">
+                  <Button
+                    onClick={() => {
+                      if (isListening) {
+                        window.speechSynthesis.cancel();
+                        setIsListening(false);
+                      } else {
+                        startVoiceInput();
+                      }
+                    }}
+                    disabled={isLoading}
+                    size="lg"
+                    className={`rounded-full h-24 w-24 ${isListening ? 'bg-red-500 hover:bg-red-600' : 'bg-primary'}`}
+                  >
+                    {isLoading ? (
+                      <Loader2 className="h-12 w-12 animate-spin" />
+                    ) : isListening ? (
+                      <MicOff className="h-12 w-12" />
+                    ) : (
+                      <Mic className="h-12 w-12" />
                     )}
+                  </Button>
+                  <p className="mt-4 text-muted-foreground">
+                    {isListening 
+                      ? "I'm listening... Tap to stop" 
+                      : "Tap the mic and start speaking"}
                   </p>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardContent className="p-6 text-center">
-                  <div className="h-12 w-12 bg-primary-100 dark:bg-primary-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary-600"><circle cx="12" cy="12" r="10" /><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" /><path d="M12 17h.01" /></svg>
+                  
+                  <div className="flex items-center mt-6 space-x-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex items-center gap-1"
+                      onClick={() => {
+                        setIsSpeaking(!isSpeaking);
+                        if (isSpeaking) {
+                          window.speechSynthesis.cancel();
+                        }
+                      }}
+                    >
+                      {isSpeaking ? (
+                        <>
+                          <VolumeX className="h-4 w-4" />
+                          <span>Mute</span>
+                        </>
+                      ) : (
+                        <>
+                          <Volume2 className="h-4 w-4" />
+                          <span>Auto-speak responses</span>
+                        </>
+                      )}
+                    </Button>
                   </div>
-                  <h4 className="text-lg font-medium mb-2">
-                    {getTranslation('Expert Advice', 'तज्ञ सल्ला')}
-                  </h4>
-                  <p className="text-sm text-gray-600 dark:text-gray-300">
-                    {getTranslation(
-                      'Get real-time farming advice from agricultural experts',
-                      'कृषी तज्ञांकडून रिअल-टाइम शेती सल्ला मिळवा'
-                    )}
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-        </div>
+                </div>
+              </TabsContent>
+            </Tabs>
+          </CardContent>
+        </Card>
       </div>
-      
-      <style>
-        {`
-          @keyframes pulsate {
-            0% {
-              box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.7);
-            }
-            70% {
-              box-shadow: 0 0 0 10px rgba(76, 175, 80, 0);
-            }
-            100% {
-              box-shadow: 0 0 0 0 rgba(76, 175, 80, 0);
-            }
-          }
-          
-          .pulsate {
-            animation: pulsate 1.5s infinite;
-          }
-        `}
-      </style>
     </Layout>
   );
 };
 
-export default VoiceAssistantPage;
+export default VoiceAssistant;

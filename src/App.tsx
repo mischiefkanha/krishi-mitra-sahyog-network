@@ -22,10 +22,12 @@ import WeatherAlerts from "./pages/WeatherAlerts";
 import CropCalendar from "./pages/CropCalendar";
 import AskExpert from "./pages/AskExpert";
 import MarketRates from "./pages/MarketRates";
+import Admin from "./pages/Admin";
 import { AuthProvider } from "./context/AuthContext";
 import { ThemeProvider } from "./context/ThemeContext";
 import { LanguageProvider } from "./context/LanguageContext";
 import ProtectedRoute from "./components/ProtectedRoute";
+import AdminRoute from "./components/AdminRoute";
 
 // Importing placeholder pages for new navigation items
 import VoiceAssistant from "./pages/VoiceAssistant";
@@ -183,6 +185,14 @@ const App = () => (
                     <ProtectedRoute>
                       <Settings />
                     </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/admin" 
+                  element={
+                    <AdminRoute>
+                      <Admin />
+                    </AdminRoute>
                   } 
                 />
                 <Route path="/test-backend" element={<TestBackend />} />
