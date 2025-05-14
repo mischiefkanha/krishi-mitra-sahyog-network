@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react'
 import { Routes, Route, BrowserRouter, Navigate } from 'react-router-dom'
 import Index from './pages/Index'
@@ -26,9 +27,9 @@ import NotFound from './pages/NotFound'
 import { ThemeProvider } from './context/ThemeContext'
 import { LanguageProvider } from './context/LanguageContext'
 import { AuthProvider } from './context/AuthContext'
-import { ProtectedRoute } from './components/ProtectedRoute'
+import ProtectedRoute from './components/ProtectedRoute'
 import { Toaster } from "@/components/ui/toaster"
-import { QueryClient, QueryClientProvider } from 'react-query';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import AdminRoute from './components/AdminRoute'
 import Admin from './pages/Admin'
 import AdminUsers from './pages/AdminUsers'

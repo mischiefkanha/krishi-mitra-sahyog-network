@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import Layout from '@/components/layout/Layout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -27,6 +26,8 @@ import {
   Database
 } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('overview');
