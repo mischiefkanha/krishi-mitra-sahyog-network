@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import Layout from '@/components/layout/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -37,7 +38,23 @@ const AdminUsers = () => {
       
       if (error) throw error;
       
-      setUsers(data || []);
+      // Transform the raw data to match the UserProfile interface
+      const transformedUsers: UserProfile[] = (data || []).map(user => ({
+        id: user.id,
+        first_name: user.first_name,
+        last_name: user.last_name,
+        email: null, // This field might not be in the profiles table, but required by UserProfile
+        avatar_url: user.avatar_url,
+        phone: user.phone,
+        address: user.address,
+        bio: user.bio,
+        created_at: null, // This field might not be in the profiles table, but required by UserProfile
+        updated_at: user.updated_at,
+        role: (user.role as 'farmer' | 'expert' | 'admin' | null) || null,
+        verified: user.verified === true ? true : user.verified === false ? false : null
+      }));
+      
+      setUsers(transformedUsers);
     } catch (error) {
       console.error('Error fetching users:', error);
       toast({
@@ -79,9 +96,19 @@ const AdminUsers = () => {
   // Update user information
   const updateUserInfo = async (userId: string, userData: Partial<UserProfile>) => {
     try {
+      // Extract only the fields that can be updated in the profiles table
+      const profileData = {
+        first_name: userData.first_name,
+        last_name: userData.last_name,
+        phone: userData.phone,
+        address: userData.address,
+        role: userData.role,
+        verified: userData.verified
+      };
+      
       const { error } = await supabase
         .from('profiles')
-        .update(userData)
+        .update(profileData)
         .eq('id', userId);
       
       if (error) throw error;
@@ -404,7 +431,7 @@ const AdminUsers = () => {
                   <Label htmlFor="role">User Role</Label>
                   <Select
                     value={selectedUser.role || 'farmer'}
-                    onValueChange={(value) => setSelectedUser({
+                    onValueChange={(value: 'farmer' | 'expert' | 'admin') => setSelectedUser({
                       ...selectedUser,
                       role: value
                     })}
@@ -426,7 +453,7 @@ const AdminUsers = () => {
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>Cancel</Button>
             <Button 
-              onClick={() => updateUserInfo(selectedUser.id, {
+              onClick={() => selectedUser && updateUserInfo(selectedUser.id, {
                 first_name: selectedUser.first_name,
                 last_name: selectedUser.last_name,
                 phone: selectedUser.phone,
