@@ -123,7 +123,7 @@ const Index = () => {
               <p className="text-gray-600 mb-4">
                 {language === 'en'
                   ? 'Get personalized crop suggestions based on your soil, climate, and location for better yields.'
-                  : 'चांगल्या उत्पादनासाठी आपल्या माती, हवामान आणि स्थानावर आधारित वैयक्तिकृत प���क सूचना मिळवा.'
+                  : 'चांगल्या उत्पादनासाठी आपल्या माती, हवामान आणि स्थानावर आधारित वैयक्तिकृत प����क सूचना मिळवा.'
                 }
               </p>
               <Link to="/crop-recommendation" className="text-primary-600 hover:text-primary-700 font-medium inline-flex items-center">
