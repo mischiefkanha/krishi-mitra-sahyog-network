@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import Layout from '@/components/layout/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -14,6 +13,20 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { UserProfile } from '@/context/AuthContext';
+
+// Define an interface that extends the profile data from Supabase
+interface ProfileData {
+  id: string;
+  first_name: string | null;
+  last_name: string | null;
+  avatar_url: string | null;
+  phone: string | null;
+  address: string | null;
+  bio: string | null;
+  updated_at: string | null;
+  role: string | null;
+  verified: boolean | null;
+}
 
 const AdminUsers = () => {
   const [loading, setLoading] = useState(true);
@@ -39,7 +52,7 @@ const AdminUsers = () => {
       if (error) throw error;
       
       // Transform the raw data to match the UserProfile interface
-      const transformedUsers: UserProfile[] = (data || []).map(user => ({
+      const transformedUsers: UserProfile[] = (data || []).map((user: ProfileData) => ({
         id: user.id,
         first_name: user.first_name,
         last_name: user.last_name,
@@ -51,7 +64,7 @@ const AdminUsers = () => {
         created_at: null, // This field might not be in the profiles table, but required by UserProfile
         updated_at: user.updated_at,
         role: (user.role as 'farmer' | 'expert' | 'admin' | null) || null,
-        verified: user.verified === true ? true : user.verified === false ? false : null
+        verified: user.verified
       }));
       
       setUsers(transformedUsers);
@@ -97,7 +110,14 @@ const AdminUsers = () => {
   const updateUserInfo = async (userId: string, userData: Partial<UserProfile>) => {
     try {
       // Extract only the fields that can be updated in the profiles table
-      const profileData = {
+      const profileData: {
+        first_name?: string | null;
+        last_name?: string | null;
+        phone?: string | null;
+        address?: string | null;
+        role?: 'farmer' | 'expert' | 'admin' | null;
+        verified?: boolean | null;
+      } = {
         first_name: userData.first_name,
         last_name: userData.last_name,
         phone: userData.phone,
