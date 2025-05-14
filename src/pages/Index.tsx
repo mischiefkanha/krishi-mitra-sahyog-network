@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -220,7 +221,7 @@ const Index = () => {
               </div>
               <div className="hidden md:block absolute top-1/2 right-0 transform translate-x-1/2 -translate-y-1/2">
                 <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M20 0L40 20L20 40L0 20L20 0Z" fill="#FEE2E2" />
+                  <path d="M20 0L40 20L20 40L0 20L20 0Z" fill="#FEE2E2"></path>
                   <path d="M17 20H23M23 20L20 17M23 20L20 23" stroke="#2E7D32" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"></path>
                 </svg>
               </div>
@@ -239,7 +240,7 @@ const Index = () => {
               </div>
               <div className="hidden md:block absolute top-1/2 right-0 transform translate-x-1/2 -translate-y-1/2">
                 <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M20 0L40 20L20 40L0 20L20 0Z" fill="#FEE2E2" />
+                  <path d="M20 0L40 20L20 40L0 20L20 0Z" fill="#FEE2E2"></path>
                   <path d="M17 20H23M23 20L20 17M23 20L20 23" stroke="#2E7D32" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"></path>
                 </svg>
               </div>
