@@ -110,14 +110,7 @@ const AdminUsers = () => {
   const updateUserInfo = async (userId: string, userData: Partial<UserProfile>) => {
     try {
       // Extract only the fields that can be updated in the profiles table
-      const profileData: {
-        first_name?: string | null;
-        last_name?: string | null;
-        phone?: string | null;
-        address?: string | null;
-        role?: 'farmer' | 'expert' | 'admin' | null;
-        verified?: boolean | null;
-      } = {
+      const profileData = {
         first_name: userData.first_name,
         last_name: userData.last_name,
         phone: userData.phone,
