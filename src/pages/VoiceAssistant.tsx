@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import Layout from '@/components/layout/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,7 +9,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguage, useTranslation } from '@/context/LanguageContext';
 import { useAuth } from '@/context/AuthContext';
-import { Mic, MicOff, Send, Bot, User2, VolumeX, Volume2, MessageSquare, VolumeUp, Copy, Loader2 } from 'lucide-react';
+import { Mic, MicOff, Send, Bot, User2, VolumeX, Volume2, MessageSquare, Volume, Copy, Loader2 } from 'lucide-react';
 
 // Message interface
 interface ChatMessage {
@@ -250,7 +249,7 @@ const VoiceAssistant = () => {
                   Text Chat
                 </TabsTrigger>
                 <TabsTrigger value="voice" className="flex items-center gap-2">
-                  <VolumeUp className="h-4 w-4" />
+                  <Volume className="h-4 w-4" />
                   Voice Assistant
                 </TabsTrigger>
               </TabsList>
