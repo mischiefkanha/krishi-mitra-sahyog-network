@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from 'react'
-import { Routes, Route, BrowserRouter, Navigate } from 'react-router-dom'
+import { Routes, Route, BrowserRouter, Navigate, Outlet } from 'react-router-dom'
 import Index from './pages/Index'
 import Login from './pages/Login'
 import Register from './pages/Register'
@@ -49,7 +49,7 @@ function App() {
               <Route path="/reset-password" element={<ResetPassword />} />
               
               {/* Protected Routes */}
-              <Route element={<ProtectedRoute />}>
+              <Route element={<ProtectedRoute><Outlet /></ProtectedRoute>}>
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/profile" element={<Profile />} />
                 <Route path="/settings" element={<Settings />} />
@@ -71,7 +71,7 @@ function App() {
               </Route>
               
               {/* Admin Routes */}
-              <Route element={<AdminRoute />}>
+              <Route element={<AdminRoute><Outlet /></AdminRoute>}>
                 <Route path="/admin" element={<Admin />} />
                 <Route path="/admin/users" element={<AdminUsers />} />
               </Route>

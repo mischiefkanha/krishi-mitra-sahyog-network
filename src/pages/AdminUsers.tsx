@@ -12,29 +12,14 @@ import { Loader2, RefreshCw, Search, Shield, CheckCircle, XCircle, Edit2, Trash2
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-
-// Define the profile type to include verified field
-interface Profile {
-  id: string;
-  first_name?: string;
-  last_name?: string;
-  phone?: string;
-  address?: string;
-  bio?: string;
-  avatar_url?: string;
-  role?: string;
-  updated_at?: string;
-  created_at?: string;
-  email?: string;
-  verified?: boolean;
-}
+import { UserProfile } from '@/context/AuthContext';
 
 const AdminUsers = () => {
   const [loading, setLoading] = useState(true);
-  const [users, setUsers] = useState<Profile[]>([]);
+  const [users, setUsers] = useState<UserProfile[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [userTypeFilter, setUserTypeFilter] = useState('all');
-  const [selectedUser, setSelectedUser] = useState<Profile | null>(null);
+  const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const { toast } = useToast();
 
@@ -92,7 +77,7 @@ const AdminUsers = () => {
   };
 
   // Update user information
-  const updateUserInfo = async (userId: string, userData: Partial<Profile>) => {
+  const updateUserInfo = async (userId: string, userData: Partial<UserProfile>) => {
     try {
       const { error } = await supabase
         .from('profiles')
