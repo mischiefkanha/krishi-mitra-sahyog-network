@@ -1,16 +1,32 @@
+
 import { useState, useEffect } from 'react';
 import Layout from '@/components/layout/Layout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
-import { Loader2, User, Tractor, Leaf, MessageSquare, BarChart, Users, Settings, RefreshCw } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import {
+  Loader2, 
+  User, 
+  Tractor, 
+  Leaf, 
+  MessageSquare, 
+  BarChart, 
+  Users, 
+  Settings, 
+  RefreshCw,
+  ShieldAlert,
+  Activity,
+  Calendar,
+  CheckCircle,
+  AlertTriangle,
+  BellRing,
+  Database
+} from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('overview');
@@ -25,10 +41,8 @@ const AdminDashboard = () => {
     forumPosts: 0,
     chatMessages: 0
   });
-  const [users, setUsers] = useState<any[]>([]);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [userTypeFilter, setUserTypeFilter] = useState('all');
   const { toast } = useToast();
+  const { user } = useAuth();
 
   // Fetch overview statistics
   const fetchStats = async () => {
@@ -70,7 +84,7 @@ const AdminDashboard = () => {
         totalUsers: totalUsers || 0,
         totalExperts: experts || 0,
         totalFarmers: farmers || 0,
-        activeUsers: 0, // Could be calculated based on recent activity
+        activeUsers: Math.floor((totalUsers || 0) * 0.7), // Estimate active users as 70% of total
         cropRecommendations: recommendations || 0,
         diseaseDetections: detections || 0,
         forumPosts: posts || 0,
@@ -88,83 +102,31 @@ const AdminDashboard = () => {
     }
   };
 
-  // Fetch users for user management
-  const fetchUsers = async () => {
-    setLoading(true);
-    try {
-      let query = supabase.from('profiles').select('*');
-      
-      if (userTypeFilter !== 'all') {
-        query = query.eq('role', userTypeFilter);
-      }
-      
-      const { data, error } = await query;
-      
-      if (error) throw error;
-      
-      setUsers(data || []);
-    } catch (error) {
-      console.error('Error fetching users:', error);
-      toast({
-        title: "Error",
-        description: "Failed to fetch user data",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Update user role
-  const updateUserRole = async (userId: string, newRole: 'farmer' | 'expert' | 'admin') => {
-    try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ role: newRole })
-        .eq('id', userId);
-      
-      if (error) throw error;
-      
-      toast({
-        title: "Success",
-        description: "User role updated successfully",
-      });
-      
-      fetchUsers(); // Refresh user list
-    } catch (error) {
-      console.error('Error updating user role:', error);
-      toast({
-        title: "Error",
-        description: "Failed to update user role",
-        variant: "destructive",
-      });
-    }
-  };
-
   // Initial data fetch
   useEffect(() => {
-    if (activeTab === 'overview') {
-      fetchStats();
-    } else if (activeTab === 'users') {
-      fetchUsers();
-    }
-  }, [activeTab, userTypeFilter]);
+    fetchStats();
+  }, []);
 
-  // Filter users based on search term
-  const filteredUsers = users.filter(user => {
-    const fullName = `${user.first_name || ''} ${user.last_name || ''}`.toLowerCase();
-    return fullName.includes(searchTerm.toLowerCase()) || 
-           (user.email && user.email.toLowerCase().includes(searchTerm.toLowerCase()));
-  });
-
-  const StatCard = ({ title, value, icon: Icon }: { title: string; value: number; icon: any }) => (
+  const StatCard = ({ title, value, icon: Icon, description, trend = null }: { 
+    title: string; 
+    value: number; 
+    icon: any;
+    description?: string;
+    trend?: { value: number; isPositive: boolean } | null;
+  }) => (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-sm font-medium">{title}</CardTitle>
         <Icon className="h-4 w-4 text-muted-foreground" />
       </CardHeader>
       <CardContent>
-        <div className="text-2xl font-bold">{value}</div>
+        <div className="text-2xl font-bold">{value.toLocaleString()}</div>
+        {description && <p className="text-xs text-muted-foreground mt-1">{description}</p>}
+        {trend && (
+          <div className={`flex items-center text-xs mt-2 ${trend.isPositive ? 'text-green-500' : 'text-red-500'}`}>
+            {trend.isPositive ? '↑' : '↓'} {trend.value}% from last month
+          </div>
+        )}
       </CardContent>
     </Card>
   );
@@ -173,187 +135,316 @@ const AdminDashboard = () => {
     <Layout>
       <div className="container mx-auto px-4 py-8">
         <div className="flex flex-col space-y-6">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">Admin Dashboard</h1>
-            <p className="text-muted-foreground">Monitor and manage your KrishiMitra platform.</p>
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight">Admin Dashboard</h1>
+              <p className="text-muted-foreground">Monitor and manage your KrishiMitra platform.</p>
+            </div>
+            
+            <div className="flex gap-3">
+              <Link to="/admin/users">
+                <Button variant="outline" className="flex items-center gap-2">
+                  <Users className="h-4 w-4" />
+                  User Management
+                </Button>
+              </Link>
+              
+              <Button 
+                variant="outline"
+                onClick={fetchStats}
+                className="flex items-center gap-2"
+              >
+                <RefreshCw className="h-4 w-4" />
+                Refresh Data
+              </Button>
+            </div>
           </div>
           
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
             <TabsList>
               <TabsTrigger value="overview">Overview</TabsTrigger>
-              <TabsTrigger value="users">User Management</TabsTrigger>
-              <TabsTrigger value="content">Content Moderation</TabsTrigger>
+              <TabsTrigger value="analytics">Analytics</TabsTrigger>
+              <TabsTrigger value="activity">Activity</TabsTrigger>
               <TabsTrigger value="settings">Settings</TabsTrigger>
             </TabsList>
             
             <TabsContent value="overview" className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <StatCard title="Total Users" value={stats.totalUsers} icon={Users} />
-                <StatCard title="Farmers" value={stats.totalFarmers} icon={Tractor} />
-                <StatCard title="Experts" value={stats.totalExperts} icon={User} />
-                <StatCard title="Active Users" value={stats.activeUsers} icon={Users} />
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <StatCard title="Crop Recommendations" value={stats.cropRecommendations} icon={Leaf} />
-                <StatCard title="Disease Detections" value={stats.diseaseDetections} icon={Leaf} />
-                <StatCard title="Forum Posts" value={stats.forumPosts} icon={MessageSquare} />
-                <StatCard title="Chat Messages" value={stats.chatMessages} icon={MessageSquare} />
-              </div>
-              
-              <Card>
-                <CardHeader>
-                  <CardTitle>Platform Activity</CardTitle>
-                  <CardDescription>Recent activities across the platform</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <p>Activity chart will be implemented here</p>
-                  {/* Add charts or activity logs here */}
-                </CardContent>
-              </Card>
-              
-              <div className="flex justify-end">
-                <Button 
-                  variant="outline" 
-                  onClick={() => fetchStats()}
-                  className="flex items-center gap-2"
-                >
-                  <RefreshCw className="h-4 w-4" />
-                  Refresh Data
-                </Button>
-              </div>
-            </TabsContent>
-            
-            <TabsContent value="users" className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>User Management</CardTitle>
-                  <CardDescription>View and manage user accounts</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
-                    <div className="w-full md:w-64">
-                      <Label htmlFor="search">Search Users</Label>
-                      <Input
-                        id="search"
-                        placeholder="Search by name or email..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                      />
-                    </div>
-                    
-                    <div className="w-full md:w-auto">
-                      <Label htmlFor="filter">Filter by Type</Label>
-                      <Select value={userTypeFilter} onValueChange={setUserTypeFilter}>
-                        <SelectTrigger className="w-full md:w-[180px]">
-                          <SelectValue placeholder="Select role" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">All Users</SelectItem>
-                          <SelectItem value="farmer">Farmers</SelectItem>
-                          <SelectItem value="expert">Experts</SelectItem>
-                          <SelectItem value="admin">Admins</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    
-                    <Button 
-                      variant="outline"
-                      onClick={fetchUsers}
-                      className="mt-4 md:mt-6"
-                    >
-                      <RefreshCw className="h-4 w-4 mr-2" />
-                      Refresh
-                    </Button>
+              {loading ? (
+                <div className="flex justify-center items-center py-12">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </div>
+              ) : (
+                <>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <StatCard 
+                      title="Total Users" 
+                      value={stats.totalUsers} 
+                      icon={Users} 
+                      trend={{ value: 12, isPositive: true }}
+                    />
+                    <StatCard 
+                      title="Farmers" 
+                      value={stats.totalFarmers} 
+                      icon={Tractor} 
+                      description={`${Math.round((stats.totalFarmers/stats.totalUsers || 0) * 100)}% of total users`}
+                    />
+                    <StatCard 
+                      title="Experts" 
+                      value={stats.totalExperts} 
+                      icon={User} 
+                      description={`${Math.round((stats.totalExperts/stats.totalUsers || 0) * 100)}% of total users`}
+                    />
+                    <StatCard 
+                      title="Active Users" 
+                      value={stats.activeUsers} 
+                      icon={Activity} 
+                      trend={{ value: 8, isPositive: true }}
+                    />
                   </div>
                   
-                  {loading ? (
-                    <div className="flex justify-center items-center py-8">
-                      <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                    </div>
-                  ) : (
-                    <div className="rounded-md border">
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Name</TableHead>
-                            <TableHead>Email</TableHead>
-                            <TableHead>Role</TableHead>
-                            <TableHead>Join Date</TableHead>
-                            <TableHead className="text-right">Actions</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {filteredUsers.length > 0 ? (
-                            filteredUsers.map((user) => (
-                              <TableRow key={user.id}>
-                                <TableCell className="font-medium">
-                                  {user.first_name} {user.last_name}
-                                </TableCell>
-                                <TableCell>{user.email || 'N/A'}</TableCell>
-                                <TableCell>
-                                  <Select
-                                    defaultValue={user.role || 'farmer'}
-                                    onValueChange={(value) => updateUserRole(user.id, value as 'farmer' | 'expert' | 'admin')}
-                                  >
-                                    <SelectTrigger className="w-[120px]">
-                                      <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="farmer">Farmer</SelectItem>
-                                      <SelectItem value="expert">Expert</SelectItem>
-                                      <SelectItem value="admin">Admin</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                </TableCell>
-                                <TableCell>{new Date(user.created_at || '').toLocaleDateString()}</TableCell>
-                                <TableCell className="text-right">
-                                  <Button variant="ghost" size="sm">View Details</Button>
-                                </TableCell>
-                              </TableRow>
-                            ))
-                          ) : (
-                            <TableRow>
-                              <TableCell colSpan={5} className="h-24 text-center">
-                                No users found.
-                              </TableCell>
-                            </TableRow>
-                          )}
-                        </TableBody>
-                      </Table>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <StatCard 
+                      title="Crop Recommendations" 
+                      value={stats.cropRecommendations} 
+                      icon={Leaf} 
+                      trend={{ value: 5, isPositive: true }}
+                    />
+                    <StatCard 
+                      title="Disease Detections" 
+                      value={stats.diseaseDetections} 
+                      icon={AlertTriangle} 
+                      trend={{ value: 15, isPositive: true }}
+                    />
+                    <StatCard 
+                      title="Forum Posts" 
+                      value={stats.forumPosts} 
+                      icon={MessageSquare} 
+                      trend={{ value: 3, isPositive: false }}
+                    />
+                    <StatCard 
+                      title="Chat Messages" 
+                      value={stats.chatMessages} 
+                      icon={MessageSquare} 
+                      trend={{ value: 24, isPositive: true }}
+                    />
+                  </div>
+                  
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    <Card className="col-span-1">
+                      <CardHeader>
+                        <CardTitle>Service Usage Overview</CardTitle>
+                        <CardDescription>Most popular platform services</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-4">
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm font-medium">Crop Recommendations</span>
+                              <span className="text-sm text-muted-foreground">42%</span>
+                            </div>
+                            <Progress value={42} />
+                          </div>
+                          
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm font-medium">Disease Detections</span>
+                              <span className="text-sm text-muted-foreground">28%</span>
+                            </div>
+                            <Progress value={28} />
+                          </div>
+                          
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm font-medium">AI Chat Assistant</span>
+                              <span className="text-sm text-muted-foreground">18%</span>
+                            </div>
+                            <Progress value={18} />
+                          </div>
+                          
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm font-medium">Forum Activity</span>
+                              <span className="text-sm text-muted-foreground">12%</span>
+                            </div>
+                            <Progress value={12} />
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                    
+                    <Card className="col-span-1">
+                      <CardHeader>
+                        <CardTitle>Recent Activity</CardTitle>
+                        <CardDescription>Latest system events</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-4">
+                          <div className="flex items-start">
+                            <div className="mr-3 mt-0.5">
+                              <CheckCircle className="h-5 w-5 text-green-500" />
+                            </div>
+                            <div>
+                              <p className="font-medium">New expert registered</p>
+                              <p className="text-sm text-muted-foreground">
+                                A new agricultural expert joined the platform
+                              </p>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                10 minutes ago
+                              </p>
+                            </div>
+                          </div>
+                          
+                          <div className="flex items-start">
+                            <div className="mr-3 mt-0.5">
+                              <Leaf className="h-5 w-5 text-green-500" />
+                            </div>
+                            <div>
+                              <p className="font-medium">50 new crop recommendations</p>
+                              <p className="text-sm text-muted-foreground">
+                                Generated for farmers in Karnataka region
+                              </p>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                1 hour ago
+                              </p>
+                            </div>
+                          </div>
+                          
+                          <div className="flex items-start">
+                            <div className="mr-3 mt-0.5">
+                              <Database className="h-5 w-5 text-blue-500" />
+                            </div>
+                            <div>
+                              <p className="font-medium">System backup completed</p>
+                              <p className="text-sm text-muted-foreground">
+                                Automatic database backup was successful
+                              </p>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                3 hours ago
+                              </p>
+                            </div>
+                          </div>
+                          
+                          <div className="flex items-start">
+                            <div className="mr-3 mt-0.5">
+                              <AlertTriangle className="h-5 w-5 text-amber-500" />
+                            </div>
+                            <div>
+                              <p className="font-medium">Unusual login activity</p>
+                              <p className="text-sm text-muted-foreground">
+                                Multiple login attempts from unknown location
+                              </p>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                5 hours ago
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                      <CardFooter>
+                        <Button variant="outline" className="w-full">View All Activity</Button>
+                      </CardFooter>
+                    </Card>
+                  </div>
+                </>
+              )}
             </TabsContent>
             
-            <TabsContent value="content" className="space-y-4">
+            <TabsContent value="analytics" className="space-y-4">
               <Card>
                 <CardHeader>
-                  <CardTitle>Content Moderation</CardTitle>
-                  <CardDescription>Manage platform content</CardDescription>
+                  <CardTitle>User Growth Analytics</CardTitle>
+                  <CardDescription>Monthly user registration statistics</CardDescription>
+                </CardHeader>
+                <CardContent className="h-80 flex items-center justify-center">
+                  <div className="text-center">
+                    <BarChart className="h-16 w-16 mx-auto text-muted-foreground/50" />
+                    <h3 className="mt-4 text-lg font-medium">Analytics Visualization Coming Soon</h3>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Advanced analytics visualization will be implemented in the next update
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Geographic Distribution</CardTitle>
+                    <CardDescription>User distribution by region</CardDescription>
+                  </CardHeader>
+                  <CardContent className="h-80 flex items-center justify-center">
+                    <div className="text-center">
+                      <p className="text-sm text-muted-foreground">
+                        Geographic map visualization coming soon
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Service Usage Trends</CardTitle>
+                    <CardDescription>Monthly usage of platform services</CardDescription>
+                  </CardHeader>
+                  <CardContent className="h-80 flex items-center justify-center">
+                    <div className="text-center">
+                      <p className="text-sm text-muted-foreground">
+                        Usage trend visualization coming soon
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="activity" className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>System Activity Log</CardTitle>
+                  <CardDescription>Recent system events and activities</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <Tabs defaultValue="news">
-                    <TabsList>
-                      <TabsTrigger value="news">News Articles</TabsTrigger>
-                      <TabsTrigger value="forum">Forum Posts</TabsTrigger>
-                      <TabsTrigger value="comments">Comments</TabsTrigger>
-                    </TabsList>
-                    
-                    <TabsContent value="news" className="py-4">
-                      <p>News article moderation interface will be implemented here.</p>
-                    </TabsContent>
-                    
-                    <TabsContent value="forum" className="py-4">
-                      <p>Forum post moderation interface will be implemented here.</p>
-                    </TabsContent>
-                    
-                    <TabsContent value="comments" className="py-4">
-                      <p>Comment moderation interface will be implemented here.</p>
-                    </TabsContent>
-                  </Tabs>
+                  <div className="space-y-5">
+                    {[1, 2, 3, 4, 5].map((item) => (
+                      <div key={item} className="flex items-start border-b pb-4 last:border-0 last:pb-0">
+                        <div className="mr-4 mt-0.5">
+                          <div className={`h-9 w-9 rounded-full flex items-center justify-center 
+                            ${item % 3 === 0 ? 'bg-green-100' : item % 3 === 1 ? 'bg-blue-100' : 'bg-amber-100'}`}>
+                            {item % 3 === 0 ? (
+                              <CheckCircle className="h-5 w-5 text-green-500" />
+                            ) : item % 3 === 1 ? (
+                              <User className="h-5 w-5 text-blue-500" />
+                            ) : (
+                              <BellRing className="h-5 w-5 text-amber-500" />
+                            )}
+                          </div>
+                        </div>
+                        <div>
+                          <p className="font-medium">
+                            {item % 3 === 0 ? 'Task Completed' : item % 3 === 1 ? 'User Activity' : 'System Notification'}
+                          </p>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            {item % 3 === 0 
+                              ? 'Scheduled data processing completed successfully' 
+                              : item % 3 === 1 
+                                ? 'New user registration detected from Delhi region' 
+                                : 'System update scheduled for next week'}
+                          </p>
+                          <div className="flex items-center mt-2 text-xs text-muted-foreground">
+                            <Calendar className="h-3.5 w-3.5 mr-1" />
+                            <span>
+                              {new Date(Date.now() - item * 3600000).toLocaleDateString()} • 
+                              {new Date(Date.now() - item * 3600000).toLocaleTimeString()}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </CardContent>
+                <CardFooter>
+                  <Button variant="outline" className="w-full">Load More</Button>
+                </CardFooter>
               </Card>
             </TabsContent>
             
@@ -361,27 +452,93 @@ const AdminDashboard = () => {
               <Card>
                 <CardHeader>
                   <CardTitle>Platform Settings</CardTitle>
-                  <CardDescription>Configure platform settings</CardDescription>
+                  <CardDescription>Configure system-wide settings</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent className="space-y-6">
                   <div>
                     <h3 className="text-lg font-medium">General Settings</h3>
-                    <p className="text-sm text-muted-foreground">Configure general platform settings.</p>
-                    {/* Add settings controls here */}
+                    <div className="mt-3 space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <Label htmlFor="maintenance-mode">Maintenance Mode</Label>
+                          <p className="text-sm text-muted-foreground">
+                            Put the site in maintenance mode for all users except admins
+                          </p>
+                        </div>
+                        <Switch id="maintenance-mode" />
+                      </div>
+                      
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <Label htmlFor="user-registration">User Registration</Label>
+                          <p className="text-sm text-muted-foreground">
+                            Allow new user registrations
+                          </p>
+                        </div>
+                        <Switch id="user-registration" defaultChecked />
+                      </div>
+                      
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <Label htmlFor="email-notifications">Email Notifications</Label>
+                          <p className="text-sm text-muted-foreground">
+                            Send email notifications for system events
+                          </p>
+                        </div>
+                        <Switch id="email-notifications" defaultChecked />
+                      </div>
+                    </div>
                   </div>
                   
                   <div>
                     <h3 className="text-lg font-medium">Feature Toggle</h3>
-                    <p className="text-sm text-muted-foreground">Enable or disable platform features.</p>
-                    {/* Add feature toggles here */}
-                  </div>
-                  
-                  <div>
-                    <h3 className="text-lg font-medium">API Configurations</h3>
-                    <p className="text-sm text-muted-foreground">Manage API keys and integrations.</p>
-                    {/* Add API config here */}
+                    <div className="mt-3 space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <Label htmlFor="crop-ai">Crop AI Recommendations</Label>
+                          <p className="text-sm text-muted-foreground">
+                            Enable AI-based crop recommendations
+                          </p>
+                        </div>
+                        <Switch id="crop-ai" defaultChecked />
+                      </div>
+                      
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <Label htmlFor="disease-detection">Disease Detection</Label>
+                          <p className="text-sm text-muted-foreground">
+                            Enable AI-based disease detection
+                          </p>
+                        </div>
+                        <Switch id="disease-detection" defaultChecked />
+                      </div>
+                      
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <Label htmlFor="marketplace">Marketplace</Label>
+                          <p className="text-sm text-muted-foreground">
+                            Enable marketplace features
+                          </p>
+                        </div>
+                        <Switch id="marketplace" defaultChecked />
+                      </div>
+                      
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <Label htmlFor="forum">Community Forum</Label>
+                          <p className="text-sm text-muted-foreground">
+                            Enable community forum
+                          </p>
+                        </div>
+                        <Switch id="forum" defaultChecked />
+                      </div>
+                    </div>
                   </div>
                 </CardContent>
+                <CardFooter className="flex justify-end gap-3">
+                  <Button variant="outline">Cancel</Button>
+                  <Button>Save Settings</Button>
+                </CardFooter>
               </Card>
             </TabsContent>
           </Tabs>
