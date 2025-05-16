@@ -1,10 +1,9 @@
-
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
   Menu, X, User, LayoutDashboard, 
   LogOut, Sun, Moon, Settings,
-  LogIn, Globe, Newspaper, MessageSquare
+  LogIn, Globe, Newspaper, MessageSquare, Shield
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
@@ -23,6 +22,9 @@ const Navbar = () => {
   const toggleLanguage = () => {
     setLanguage(language === 'en' ? 'mr' : 'en');
   };
+
+  // Check if the user is an admin
+  const isAdmin = profile?.role === 'admin';
 
   return (
     <nav className="bg-white dark:bg-gray-800 shadow-md py-4 sticky top-0 z-50">
@@ -63,6 +65,13 @@ const Navbar = () => {
                 <Link to="/marketplace" className={`text-gray-700 dark:text-gray-200 hover:text-primary-700 dark:hover:text-primary-400 font-medium transition-colors ${location.pathname === '/marketplace' ? 'text-primary-700 dark:text-primary-400' : ''}`}>
                   Marketplace
                 </Link>
+                {/* Add Admin link only for admin users */}
+                {isAdmin && (
+                  <Link to="/admin" className={`text-gray-700 dark:text-gray-200 hover:text-primary-700 dark:hover:text-primary-400 font-medium transition-colors flex items-center gap-1 ${location.pathname === '/admin' ? 'text-primary-700 dark:text-primary-400' : ''}`}>
+                    <Shield size={16} />
+                    Admin
+                  </Link>
+                )}
               </>
             )}
           </div>
@@ -147,6 +156,15 @@ const Navbar = () => {
                         <span>Dashboard</span>
                       </DropdownMenuItem>
                     </Link>
+                    {/* Add Admin link to dropdown for admin users */}
+                    {isAdmin && (
+                      <Link to="/admin">
+                        <DropdownMenuItem>
+                          <Shield className="mr-2 h-4 w-4" />
+                          <span>Admin Panel</span>
+                        </DropdownMenuItem>
+                      </Link>
+                    )}
                     <Link to="/settings">
                       <DropdownMenuItem>
                         <Settings className="mr-2 h-4 w-4" />
@@ -253,6 +271,17 @@ const Navbar = () => {
                   >
                     Marketplace
                   </Link>
+                  {/* Add Admin link in mobile menu for admin users */}
+                  {isAdmin && (
+                    <Link 
+                      to="/admin" 
+                      className={`text-gray-700 dark:text-gray-200 hover:text-primary-700 dark:hover:text-primary-400 font-medium py-2 flex items-center gap-2 ${location.pathname === '/admin' ? 'text-primary-700 dark:text-primary-400' : ''}`}
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      <Shield className="inline-block mr-2 h-4 w-4" />
+                      Admin Panel
+                    </Link>
+                  )}
                 </>
               )}
               
