@@ -27,18 +27,18 @@ const Navbar = () => {
   const isAdmin = profile?.role === 'admin';
 
   return (
-    <nav className="bg-white dark:bg-gray-800 shadow-md py-4 sticky top-0 z-50">
+    <nav className="bg-white dark:bg-gray-800 shadow-md py-2 sticky top-0 z-50">
       <div className="container mx-auto px-4">
         <div className="flex justify-between items-center">
           <Link to="/" className="flex items-center gap-2">
-            <img src="/logo.svg" alt="KrishiMitra Logo" className="h-10 w-10" />
-            <span className="text-2xl font-bold dark:text-white">
+            <img src="/logo.svg" alt="KrishiMitra Logo" className="h-8 w-8" />
+            <span className="text-xl font-bold dark:text-white">
               <span className="text-primary-700 dark:text-primary-400">Krishi</span>
               <span className="text-primary-900 dark:text-primary-200">Mitra</span>
             </span>
           </Link>
           
-          <div className="hidden md:flex items-center space-x-8">
+          <div className="hidden md:flex items-center space-x-6">
             <Link to="/" className={`text-gray-700 dark:text-gray-200 hover:text-primary-700 dark:hover:text-primary-400 font-medium transition-colors ${location.pathname === '/' ? 'text-primary-700 dark:text-primary-400' : ''}`}>
               Home
             </Link>
@@ -65,7 +65,6 @@ const Navbar = () => {
                 <Link to="/marketplace" className={`text-gray-700 dark:text-gray-200 hover:text-primary-700 dark:hover:text-primary-400 font-medium transition-colors ${location.pathname === '/marketplace' ? 'text-primary-700 dark:text-primary-400' : ''}`}>
                   Marketplace
                 </Link>
-                {/* Add Admin link only for admin users */}
                 {isAdmin && (
                   <Link to="/admin" className={`text-gray-700 dark:text-gray-200 hover:text-primary-700 dark:hover:text-primary-400 font-medium transition-colors flex items-center gap-1 ${location.pathname === '/admin' ? 'text-primary-700 dark:text-primary-400' : ''}`}>
                     <Shield size={16} />
@@ -156,12 +155,11 @@ const Navbar = () => {
                         <span>Dashboard</span>
                       </DropdownMenuItem>
                     </Link>
-                    {/* Add Admin link to dropdown for admin users */}
                     {isAdmin && (
-                      <Link to="/admin">
-                        <DropdownMenuItem>
+                      <Link to="/admin/users">
+                        <DropdownMenuItem className="text-primary-600 dark:text-primary-400 font-medium">
                           <Shield className="mr-2 h-4 w-4" />
-                          <span>Admin Panel</span>
+                          <span>Admin Users</span>
                         </DropdownMenuItem>
                       </Link>
                     )}
@@ -190,9 +188,10 @@ const Navbar = () => {
                     <span>Login</span>
                   </Button>
                 </Link>
-                <Link to="/register">
-                  <Button className="bg-primary-600 hover:bg-primary-700 dark:bg-primary-500 dark:hover:bg-primary-600">
-                    Register
+                <Link to="/admin" className="flex items-center">
+                  <Button variant="outline" className="flex items-center gap-2 border-primary-500 text-primary-600 dark:border-primary-400 dark:text-primary-400">
+                    <Shield size={18} />
+                    <span>Admin Login</span>
                   </Button>
                 </Link>
               </div>
