@@ -42,26 +42,28 @@ const AdminDashboard = () => {
 
   const fetchData = async () => {
     try {
-      // Fetch users with auth data
+      // Fetch users with basic profile data
       const { data: usersData, error: usersError } = await supabase
         .from('profiles')
-        .select(`
-          *,
-          email:id (
-            select auth.users.email 
-            from auth.users 
-            where auth.users.id = profiles.id
-          )
-        `);
+        .select('*');
 
       if (usersError) throw usersError;
       
       // Transform the data to match UserProfile interface
-      const transformedUsers = usersData?.map(user => ({
-        ...user,
-        email: user.email || null,
-        created_at: user.updated_at // Use updated_at as fallback for created_at
-      })) || [];
+      const transformedUsers: UserProfile[] = (usersData || []).map(user => ({
+        id: user.id,
+        first_name: user.first_name,
+        last_name: user.last_name,
+        email: null, // We'll handle email separately if needed
+        avatar_url: user.avatar_url,
+        phone: user.phone,
+        address: user.address,
+        bio: user.bio,
+        created_at: user.updated_at, // Use updated_at as fallback for created_at
+        updated_at: user.updated_at,
+        role: user.role as 'farmer' | 'expert' | 'admin',
+        verified: user.verified
+      }));
       
       setUsers(transformedUsers);
 
