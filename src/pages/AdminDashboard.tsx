@@ -238,7 +238,7 @@ const AdminDashboard = () => {
                     </TableCell>
                     <TableCell>
                       {user.verified ? (
-                        <Badge className="bg-green-100 text-green-800 border-green-200">
+                        <Badge className="bg-green-100 text-green-800 border-green-200 dark:bg-green-900 dark:text-green-300">
                           Verified
                         </Badge>
                       ) : (
