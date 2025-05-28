@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -5,7 +6,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { motion } from 'framer-motion';
-import { ArrowRight, Check, Leaf, BarChart2, Shield, Users, Sprout, ShoppingBag, MessageCircle } from 'lucide-react';
+import { ArrowRight, Check, Leaf, BarChart2, Shield, Users, Sprout, ShoppingBag, MessageCircle, LogIn, UserPlus } from 'lucide-react';
 import Layout from '@/components/layout/Layout';
 import LatestNewsAndSchemes from '@/components/home/LatestNewsAndSchemes';
 import FarmerFeatures from '@/components/home/FarmerFeatures';
@@ -29,7 +30,7 @@ const Index = () => {
 
   return (
     <Layout>
-      <div className="bg-black text-white">
+      <div className="bg-black text-white py-20">
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
             <div>
@@ -45,7 +46,30 @@ const Index = () => {
                   : 'कृषिमित्र शेतकऱ्यांना डेटा-आधारित निर्णय घेण्यास, पिकांचे रोग लवकर शोधण्यास आणि अधिक नफ्यासाठी थेट खरेदीदारांना विक्री करण्यास मदत करते.'
                 }
               </p>
-              <Button size="lg" className="bg-green-600 hover:bg-green-700" onClick={handleGetStarted}>
+              
+              {/* Login/Signup buttons for non-authenticated users */}
+              {!user ? (
+                <div className="flex flex-col sm:flex-row gap-4 mb-8">
+                  <Link to="/login">
+                    <Button size="lg" className="bg-green-600 hover:bg-green-700 w-full sm:w-auto">
+                      <LogIn className="mr-2 h-5 w-5" />
+                      {language === 'en' ? 'Login' : 'लॉगिन'}
+                    </Button>
+                  </Link>
+                  <Link to="/register">
+                    <Button size="lg" variant="outline" className="border-white text-white hover:bg-white hover:text-black w-full sm:w-auto">
+                      <UserPlus className="mr-2 h-5 w-5" />
+                      {language === 'en' ? 'Sign Up' : 'साइन अप'}
+                    </Button>
+                  </Link>
+                </div>
+              ) : (
+                <Button size="lg" className="bg-green-600 hover:bg-green-700" onClick={handleGetStarted}>
+                  {language === 'en' ? 'Go to Dashboard' : 'डॅशबोर्डवर जा'} <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              )}
+              
+              <Button size="lg" className="bg-transparent border-2 border-white text-white hover:bg-white hover:text-black ml-4" onClick={handleGetStarted}>
                 {language === 'en' ? 'Get Started' : 'सुरू करा'} <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </div>
@@ -97,11 +121,19 @@ const Index = () => {
                     : 'आपल्या स्थान आणि पीक प्रकारावर आधारित वैयक्तिकृत हवामान सूचना मिळवा. आमची प्रणाली हवामान पॅटर्न विश्लेषित करते आणि आपल्या पिकांना प्रतिकूल हवामान परिस्थितीपासून संरक्षित करण्यासाठी आपल्याला वेळेवर सूचना पाठवते.'
                   }
                 </p>
-                <Link to="/weather-alerts">
-                  <Button className="bg-primary-600 hover:bg-primary-700 text-white">
-                    {language === 'en' ? 'Set Up Weather Alerts' : 'हवामान सूचना सेट करा'}
-                  </Button>
-                </Link>
+                {user ? (
+                  <Link to="/weather-alerts">
+                    <Button className="bg-primary-600 hover:bg-primary-700 text-white">
+                      {language === 'en' ? 'Set Up Weather Alerts' : 'हवामान सूचना सेट करा'}
+                    </Button>
+                  </Link>
+                ) : (
+                  <Link to="/login">
+                    <Button className="bg-primary-600 hover:bg-primary-700 text-white">
+                      {language === 'en' ? 'Login to Access Weather Alerts' : 'हवामान सूचना साठी लॉगिन करा'}
+                    </Button>
+                  </Link>
+                )}
               </div>
               <div className="md:col-span-1">
                 <div className="max-w-sm mx-auto">
@@ -126,9 +158,15 @@ const Index = () => {
                   : 'चांगल्या उत्पादनासाठी आपल्या माती, हवामान आणि स्थानावर आधारित वैयक्तिकृत पीक सूचना मिळवा.'
                 }
               </p>
-              <Link to="/crop-recommendation" className="text-primary-600 hover:text-primary-700 font-medium inline-flex items-center">
-                {language === 'en' ? 'Learn more' : 'अधिक जाणून घ्या'} <ArrowRight size={16} className="ml-2" />
-              </Link>
+              {user ? (
+                <Link to="/crop-recommendation" className="text-primary-600 hover:text-primary-700 font-medium inline-flex items-center">
+                  {language === 'en' ? 'Learn more' : 'अधिक जाणून घ्या'} <ArrowRight size={16} className="ml-2" />
+                </Link>
+              ) : (
+                <Link to="/login" className="text-primary-600 hover:text-primary-700 font-medium inline-flex items-center">
+                  {language === 'en' ? 'Login to access' : 'प्रवेश करण्यासाठी लॉगिन करा'} <ArrowRight size={16} className="ml-2" />
+                </Link>
+              )}
             </div>
             
             {/* Feature 2 */}
@@ -145,9 +183,15 @@ const Index = () => {
                   : 'रोग लवकर शोधण्यासाठी आणि उपचार शिफारसी मिळवण्यासाठी आपल्या पिकांचे फोटो अपलोड करा.'
                 }
               </p>
-              <Link to="/disease-detection" className="text-primary-600 hover:text-primary-700 font-medium inline-flex items-center">
-                {language === 'en' ? 'Learn more' : 'अधिक जाणून घ्या'} <ArrowRight size={16} className="ml-2" />
-              </Link>
+              {user ? (
+                <Link to="/disease-detection" className="text-primary-600 hover:text-primary-700 font-medium inline-flex items-center">
+                  {language === 'en' ? 'Learn more' : 'अधिक जाणून घ्या'} <ArrowRight size={16} className="ml-2" />
+                </Link>
+              ) : (
+                <Link to="/login" className="text-primary-600 hover:text-primary-700 font-medium inline-flex items-center">
+                  {language === 'en' ? 'Login to access' : 'प्रवेश करण्यासाठी लॉगिन करा'} <ArrowRight size={16} className="ml-2" />
+                </Link>
+              )}
             </div>
             
             {/* Feature 3 */}
@@ -164,9 +208,15 @@ const Index = () => {
                   : 'मध्यस्थ कापून आणि आपला नफा वाढवून, आपला माल थेट खरेदीदारांना विका.'
                 }
               </p>
-              <Link to="/marketplace" className="text-primary-600 hover:text-primary-700 font-medium inline-flex items-center">
-                {language === 'en' ? 'Learn more' : 'अधिक जाणून घ्या'} <ArrowRight size={16} className="ml-2" />
-              </Link>
+              {user ? (
+                <Link to="/marketplace" className="text-primary-600 hover:text-primary-700 font-medium inline-flex items-center">
+                  {language === 'en' ? 'Learn more' : 'अधिक जाणून घ्या'} <ArrowRight size={16} className="ml-2" />
+                </Link>
+              ) : (
+                <Link to="/login" className="text-primary-600 hover:text-primary-700 font-medium inline-flex items-center">
+                  {language === 'en' ? 'Login to access' : 'प्रवेश करण्यासाठी लॉगिन करा'} <ArrowRight size={16} className="ml-2" />
+                </Link>
+              )}
             </div>
             
             {/* Feature 4 */}
@@ -183,9 +233,15 @@ const Index = () => {
                   : 'वैयक्तिकृत सल्ल्यासाठी चॅट, ऑडिओ किंवा व्हिडिओद्वारे कृषी तज्ञांशी संपर्क साधा.'
                 }
               </p>
-              <Link to="/ask-expert" className="text-primary-600 hover:text-primary-700 font-medium inline-flex items-center">
-                {language === 'en' ? 'Learn more' : 'अधिक जाणून घ्या'} <ArrowRight size={16} className="ml-2" />
-              </Link>
+              {user ? (
+                <Link to="/ask-expert" className="text-primary-600 hover:text-primary-700 font-medium inline-flex items-center">
+                  {language === 'en' ? 'Learn more' : 'अधिक जाणून घ्या'} <ArrowRight size={16} className="ml-2" />
+                </Link>
+              ) : (
+                <Link to="/login" className="text-primary-600 hover:text-primary-700 font-medium inline-flex items-center">
+                  {language === 'en' ? 'Login to access' : 'प्रवेश करण्यासाठी लॉगिन करा'} <ArrowRight size={16} className="ml-2" />
+                </Link>
+              )}
             </div>
           </div>
         </div>
@@ -275,16 +331,26 @@ const Index = () => {
               }
             </p>
             <div className="flex flex-col sm:flex-row justify-center gap-4">
-              <Link to="/register">
-                <Button size="lg" className="bg-white text-primary-800 hover:bg-gray-100">
-                  {language === 'en' ? 'Register Now' : 'आताच नोंदणी करा'}
-                </Button>
-              </Link>
-              <Link to="/contact">
-                <Button size="lg" variant="outline" className="border-white text-white hover:bg-primary-700">
-                  {language === 'en' ? 'Contact Us' : 'संपर्क करा'}
-                </Button>
-              </Link>
+              {!user ? (
+                <>
+                  <Link to="/register">
+                    <Button size="lg" className="bg-white text-primary-800 hover:bg-gray-100">
+                      {language === 'en' ? 'Register Now' : 'आताच नोंदणी करा'}
+                    </Button>
+                  </Link>
+                  <Link to="/login">
+                    <Button size="lg" variant="outline" className="border-white text-white hover:bg-primary-700">
+                      {language === 'en' ? 'Login' : 'लॉगिन'}
+                    </Button>
+                  </Link>
+                </>
+              ) : (
+                <Link to="/dashboard">
+                  <Button size="lg" className="bg-white text-primary-800 hover:bg-gray-100">
+                    {language === 'en' ? 'Go to Dashboard' : 'डॅशबोर्डवर जा'}
+                  </Button>
+                </Link>
+              )}
             </div>
           </div>
         </div>
