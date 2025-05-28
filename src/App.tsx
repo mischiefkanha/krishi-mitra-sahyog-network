@@ -24,10 +24,13 @@ import TestBackend from './pages/TestBackend'
 import ReferAndEarn from './pages/ReferAndEarn'
 import Marketplace from './pages/Marketplace'
 import NotFound from './pages/NotFound'
+import AdminLogin from './pages/AdminLogin'
+import AdminDashboard from './pages/AdminDashboard'
 import { ThemeProvider } from './context/ThemeContext'
 import { LanguageProvider } from './context/LanguageContext'
 import { AuthProvider } from './context/AuthContext'
 import ProtectedRoute from './components/ProtectedRoute'
+import AdminProtectedRoute from './components/AdminProtectedRoute'
 import { Toaster } from "@/components/ui/toaster"
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import AdminRoute from './components/AdminRoute'
@@ -47,6 +50,12 @@ function App() {
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
               <Route path="/reset-password" element={<ResetPassword />} />
+              
+              {/* Admin Routes */}
+              <Route path="/admin" element={<AdminLogin />} />
+              <Route element={<AdminProtectedRoute><Outlet /></AdminProtectedRoute>}>
+                <Route path="/admin/dashboard" element={<AdminDashboard />} />
+              </Route>
               
               {/* Protected Routes */}
               <Route element={<ProtectedRoute><Outlet /></ProtectedRoute>}>
@@ -70,9 +79,8 @@ function App() {
                 <Route path="/marketplace" element={<Marketplace />} />
               </Route>
               
-              {/* Admin Routes */}
+              {/* User Admin Routes (for regular users with admin role) */}
               <Route element={<AdminRoute><Outlet /></AdminRoute>}>
-                <Route path="/admin" element={<Admin />} />
                 <Route path="/admin/users" element={<AdminUsers />} />
               </Route>
               
