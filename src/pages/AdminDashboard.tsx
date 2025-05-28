@@ -42,13 +42,28 @@ const AdminDashboard = () => {
 
   const fetchData = async () => {
     try {
-      // Fetch users
+      // Fetch users with auth data
       const { data: usersData, error: usersError } = await supabase
         .from('profiles')
-        .select('*');
+        .select(`
+          *,
+          email:id (
+            select auth.users.email 
+            from auth.users 
+            where auth.users.id = profiles.id
+          )
+        `);
 
       if (usersError) throw usersError;
-      setUsers(usersData || []);
+      
+      // Transform the data to match UserProfile interface
+      const transformedUsers = usersData?.map(user => ({
+        ...user,
+        email: user.email || null,
+        created_at: user.updated_at // Use updated_at as fallback for created_at
+      })) || [];
+      
+      setUsers(transformedUsers);
 
       // Fetch recent activities
       const { data: activitiesData, error: activitiesError } = await supabase
@@ -221,7 +236,7 @@ const AdminDashboard = () => {
                     </TableCell>
                     <TableCell>
                       {user.verified ? (
-                        <Badge variant="success" className="bg-green-100 text-green-800">
+                        <Badge className="bg-green-100 text-green-800 border-green-200">
                           Verified
                         </Badge>
                       ) : (
